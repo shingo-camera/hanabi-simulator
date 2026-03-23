@@ -260,6 +260,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <button class="mm-btn" id="mm-tube" onclick="setMapMode('tube')">🔴 筒場追加</button>
         <button class="mm-btn target" id="mm-target" onclick="setMapMode('target')">🏢 対象物追加</button>
       </div>
+      <div id="map-btns" style="display:none;position:absolute;bottom:8px;right:8px;z-index:1000;flex-direction:column;gap:4px;">
+        <a id="map-btn-gmap" href="#" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;
+          background:#4285f4;border-radius:4px;text-decoration:none;font-size:16px;
+          box-shadow:0 2px 6px rgba(0,0,0,.5);" title="Googleマップで開く">🗺</a>
+        <a id="map-btn-sv" href="#" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;
+          background:#34a853;border-radius:4px;text-decoration:none;font-size:16px;
+          box-shadow:0 2px 6px rgba(0,0,0,.5);" title="ストリートビューで開く">👁</a>
+      </div>
     </div>
 
     <!-- シミュレーターパネル -->
@@ -297,6 +307,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div id="cv-wrap">
           <canvas id="sim-canvas"></canvas>
           <div id="sim-info"></div>
+          <div id="view-info" style="position:absolute;bottom:6px;right:8px;font-size:8px;
+            line-height:1.6;pointer-events:none;text-align:right;"></div>
         </div>
       </div>
     </div>
@@ -556,12 +568,7 @@ function onMapClick(e){
     viewLat = lat;
     viewLng = lng;
     viewManual = true;
-    // 視点マーカー更新
-    if(viewMarker) map.removeLayer(viewMarker);
-    viewMarker = L.circleMarker([lat,lng],{
-      radius:6, color:'#ffffff', fillColor:'#ffffff', fillOpacity:.9, weight:2
-    }).addTo(map).bindTooltip('👁 視点',{direction:'top',permanent:false});
-    renderSim();
+    onViewPick();
     return;
   }
 
@@ -576,6 +583,96 @@ function onMapClick(e){
     openAddTubeModal(lat,lng);
   } else if(mapMode==='target'){
     openAddTargetModal(lat,lng);
+  }
+}
+
+// 視点確定後の処理（標高取得・マーカー更新・シミュレーション起動）
+async function onViewPick(){
+  if(viewLat===null||viewLng===null) return;
+
+  // 既存マーカー削除
+  if(viewMarker){ map.removeLayer(viewMarker); viewMarker=null; }
+
+  // 現行ツールと同じ青丸＋ラベルマーカー（ドラッグ可能）
+  viewMarker = L.marker([viewLat, viewLng],{
+    icon: L.divIcon({
+      html:`<div style="display:flex;align-items:center;gap:4px;">
+        <div style="width:12px;height:12px;border-radius:50%;flex-shrink:0;
+          background:#7eb8e8;border:2px solid white;box-shadow:0 0 8px #7eb8e8;"></div>
+        <div id="vmarker-label" style="background:rgba(10,12,20,.78);border-radius:3px;
+          padding:1px 5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+          color:#7eb8e8;white-space:nowrap;pointer-events:none;line-height:1.5;">取得中…</div>
+      </div>`,
+      className:'', iconAnchor:[6,6]
+    }),
+    draggable: true,
+    zIndexOffset: 10000
+  }).addTo(map);
+
+  viewMarker.on('dragend', e=>{
+    const ll = e.target.getLatLng();
+    viewLat = ll.lat;
+    viewLng = ll.lng;
+    onViewPick();
+  });
+
+  // 国土地理院から標高取得
+  viewElev = 0;
+  try{ viewElev = await getElev(viewLat, viewLng); }catch(e){}
+
+  // ラベル更新（筒場・対象それぞれの距離を表示）
+  updateViewLabel();
+
+  // シミュレーション更新
+  renderSim();
+}
+
+function updateViewLabel(){
+  const lbl = document.getElementById('vmarker-label');
+  if(!lbl) return;
+  const fid = document.getElementById('sim-sel-festival').value;
+  const tid = document.getElementById('sim-sel-target').value;
+
+  const tg = tid ? db.targets.find(x=>x.id===tid) : null;
+  const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
+
+  let parts = [];
+
+  // 筒場との距離（複数ある場合は最近・最遠）
+  if(tubes.length>0){
+    const dists = tubes.map(t=>hav(viewLat,viewLng,t.lat,t.lng));
+    const minD = Math.min(...dists);
+    const label = minD<1 ? `筒:${Math.round(minD*1000)}m` : `筒:${minD.toFixed(2)}km`;
+    parts.push(label);
+  }
+
+  // 対象物との距離
+  if(tg){
+    const d = hav(viewLat, viewLng, tg.lat, tg.lng);
+    const label = d<1 ? `対:${Math.round(d*1000)}m` : `対:${d.toFixed(2)}km`;
+    parts.push(label);
+  }
+
+  // 標高
+  parts.push(`E:${viewElev.toFixed(1)}m`);
+
+  lbl.textContent = parts.join('  ');
+
+  // sim-info下部にも詳細表示
+  const infoEl = document.getElementById('view-info');
+  if(!infoEl) return;
+  if(tubes.length>0 && tg){
+    const distLines = tubes.map(t=>{
+      const d = hav(viewLat,viewLng,t.lat,t.lng);
+      return `${t.name}: ${d<1?Math.round(d*1000)+'m':d.toFixed(2)+'km'}`;
+    });
+    const dTg = hav(viewLat, viewLng, tg.lat, tg.lng);
+    infoEl.innerHTML =
+      `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>　` +
+      distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ') +
+      `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'}</span>`;
+  } else {
+    infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>`;
   }
 }
 
@@ -816,7 +913,7 @@ function refreshMapMarkers(){
 
 let shootingLines=[];  // 配列で管理（複数筒場×下線+上線）
 let viewMarker=null;   // 視点マーカー
-let viewLat=null, viewLng=null, viewManual=false; // 手動視点
+let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
 
 function drawShootingLine(fid, tid){
   // 既存ライン全削除
@@ -1108,6 +1205,16 @@ function renderSim(){
   const fName = (db.festivals.find(f=>f.id===fid)||{}).name||'';
   document.getElementById('sim-info').textContent =
     `視点距離:${viewDist}m  方位:${document.getElementById('sl-az').value}°  仰角:${document.getElementById('sl-el').value}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
+
+  // 地図連携ボタン更新（GoogleマップURL・StreetView URL）
+  // 方位角：視点→対象物のベース方位 + 左右オフセット
+  const _baseAz = Math.atan2(
+    (tg.lng - simViewLng)*Math.cos(tg.lat*Math.PI/180),
+    tg.lat - simViewLat
+  );
+  updateMapBtns(simViewLat, simViewLng, _baseAz + azOff);
+  // 視点ラベル・情報更新（大会/対象選択変更時にも反映）
+  if(viewManual) updateViewLabel();
 }
 
 // ==================== 設定モーダル ====================
@@ -1160,6 +1267,25 @@ function toggleMobPanel(){
 }
 function closeMobPanel(){
   document.getElementById('pnl').classList.remove('open');
+}
+
+// ==================== 地図連携ボタン ====================
+function updateMapBtns(simViewLat, simViewLng, azRad){
+  if(simViewLat===null||simViewLat===undefined) return;
+  const lat  = simViewLat.toFixed(6);
+  const lng  = simViewLng.toFixed(6);
+  // 画角（焦点距離から計算）
+  const focal = parseFloat(document.getElementById('sl-focal').value);
+  const fovDeg = Math.round(Math.min(90, Math.max(10, 2*Math.atan(36/(2*focal))*180/Math.PI)));
+  // 方位角（ラジアン→度、北基準時計回り）
+  const azDeg  = ((azRad * 180 / Math.PI) % 360 + 360) % 360;
+  const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+  const svUrl   = `https://www.google.com/maps/@${lat},${lng},3a,${fovDeg}y,${azDeg.toFixed(1)}h,90t/data=!3m1!1e1`;
+  const btns = document.getElementById('map-btns');
+  if(!btns) return;
+  btns.style.display = 'flex';
+  document.getElementById('map-btn-gmap').href = mapsUrl;
+  document.getElementById('map-btn-sv').href   = svUrl;
 }
 
 // ==================== ユーティリティ ====================
@@ -1239,6 +1365,30 @@ async function extractAndApplyMapsURL(rawText){
     if(coords&&applyCoords(coords[0],coords[1]))return true;
   }catch(e){console.warn("[Maps]",e.message||e);}
   return false;
+}
+
+// ==================== 天文・地理計算 ====================
+// 水平距離(km) Haversine
+function hav(a,b,c,d){
+  const R=6371,r=Math.PI/180;
+  const dA=(c-a)*r,dB=(d-b)*r;
+  const x=Math.sin(dA/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dB/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+// 方位角(°)
+function brng(a,b,c,d){
+  const r=Math.PI/180,dl=(d-b)*r;
+  const y=Math.sin(dl)*Math.cos(c*r);
+  const x=Math.cos(a*r)*Math.sin(c*r)-Math.sin(a*r)*Math.cos(c*r)*Math.cos(dl);
+  return((Math.atan2(y,x)*180/Math.PI)+360)%360;
+}
+// 国土地理院 標高API
+async function getElev(lat,lng){
+  try{
+    const r=await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng.toFixed(6)}&lat=${lat.toFixed(6)}&outtype=JSON`);
+    const j=await r.json();
+    return(j.elevation!==null&&isFinite(j.elevation))?j.elevation:0;
+  }catch{return 0;}
 }
 
 // ==================== リサイズ ====================
