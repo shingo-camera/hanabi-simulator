@@ -280,6 +280,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
           <option value="">--</option>
         </select>
         <span class="sx">×</span>
+        <span class="slabel">筒場</span>
+        <select id="sim-sel-tube" onchange="renderSim()">
+          <option value="">--</option>
+        </select>
+        <span class="sx">×</span>
         <span class="slabel">対象</span>
         <select id="sim-sel-target" onchange="renderSim()">
           <option value="">--</option>
@@ -358,6 +363,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <select id="inp-tube-festival"></select>
     </div>
     <div class="mig">
+      <label>地面標高</label>
+      <div id="tube-elev-disp" style="font-size:10px;color:var(--ac);padding:3px 0;">取得中…</div>
+    </div>
+    <div class="mig">
       <label>使用号数（複数選択可）</label>
       <div class="num-grid" id="tube-num-grid"></div>
     </div>
@@ -377,7 +386,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <input type="text" id="inp-target-name" placeholder="例：通天閣・○○橋">
     </div>
     <div class="mig">
-      <label>高さ (m)</label>
+      <label>地面標高</label>
+      <div id="target-elev-disp" style="font-size:10px;color:var(--ac2);padding:3px 0;">取得中…</div>
+    </div>
+    <div class="mig">
+      <label>建物高さ (m)　※地面から頂点まで</label>
       <input type="number" id="inp-target-height" placeholder="例：103" min="1" max="2000">
     </div>
     <div class="modal-btns">
@@ -638,19 +651,17 @@ function updateViewLabel(){
 
   let parts = [];
 
-  // 筒場との距離（複数ある場合は最近・最遠）
-  if(tubes.length>0){
-    const dists = tubes.map(t=>hav(viewLat,viewLng,t.lat,t.lng));
-    const minD = Math.min(...dists);
-    const label = minD<1 ? `筒:${Math.round(minD*1000)}m` : `筒:${minD.toFixed(2)}km`;
-    parts.push(label);
-  }
+  // 筒場との距離（各筒場を個別表示）
+  tubes.forEach((t,i)=>{
+    const d = hav(viewLat,viewLng,t.lat,t.lng);
+    const dist = d<1 ? `${Math.round(d*1000)}m` : `${d.toFixed(2)}km`;
+    parts.push(`筒${i+1}:${dist}`);
+  });
 
   // 対象物との距離
   if(tg){
     const d = hav(viewLat, viewLng, tg.lat, tg.lng);
-    const label = d<1 ? `対:${Math.round(d*1000)}m` : `対:${d.toFixed(2)}km`;
-    parts.push(label);
+    parts.push(`対:${d<1?Math.round(d*1000)+'m':d.toFixed(2)+'km'}`);
   }
 
   // 標高
@@ -678,8 +689,8 @@ function updateViewLabel(){
 
 // ==================== 花火大会 ====================
 let editingFestivalId = null;
-let pendingTubeLat=null, pendingTubeLng=null;
-let pendingTargetLat=null, pendingTargetLng=null;
+let pendingTubeLat=null, pendingTubeLng=null, pendingTubeElev=0;
+let pendingTargetLat=null, pendingTargetLng=null, pendingTargetElev=0;
 
 function openAddFestival(){
   editingFestivalId = null;
@@ -747,9 +758,10 @@ function refreshFestivalSelects(){
 function startAddTube(){
   setMapMode('tube');
 }
-function openAddTubeModal(lat,lng){
-  pendingTubeLat=lat; pendingTubeLng=lng;
+async function openAddTubeModal(lat,lng){
+  pendingTubeLat=lat; pendingTubeLng=lng; pendingTubeElev=0;
   document.getElementById('inp-tube-name').value='';
+  document.getElementById('tube-elev-disp').textContent='取得中…';
   // 大会選択を現在選択中に
   const fid = document.getElementById('sel-festival').value;
   const sel = document.getElementById('inp-tube-festival');
@@ -759,6 +771,9 @@ function openAddTubeModal(lat,lng){
   buildNumGrid('tube-num-grid',[]);
   openModal('modal-tube');
   setTimeout(()=>document.getElementById('inp-tube-name').focus(),100);
+  // 標高取得（非同期・モーダル表示後に更新）
+  try{ pendingTubeElev = await getElev(lat,lng); }catch(e){ pendingTubeElev=0; }
+  document.getElementById('tube-elev-disp').textContent=`${pendingTubeElev.toFixed(1)} m`;
 }
 function buildNumGrid(containerId, checked){
   const el = document.getElementById(containerId);
@@ -789,7 +804,7 @@ function saveTube(){
   const nums = getCheckedNums('tube-num-grid');
   if(!fid){alert('大会を選択してください');return;}
   if(nums.length===0){alert('号数を1つ以上選択してください');return;}
-  db.tubes.push({id:uid(), festivalId:fid, name, lat:pendingTubeLat, lng:pendingTubeLng, nums});
+  db.tubes.push({id:uid(), festivalId:fid, name, lat:pendingTubeLat, lng:pendingTubeLng, nums, elev:pendingTubeElev});
   saveDB();
   closeModal('modal-tube');
   pendingMarker=null;
@@ -827,12 +842,16 @@ function renderTubeList(){
 function startAddTarget(){
   setMapMode('target');
 }
-function openAddTargetModal(lat,lng){
-  pendingTargetLat=lat; pendingTargetLng=lng;
+async function openAddTargetModal(lat,lng){
+  pendingTargetLat=lat; pendingTargetLng=lng; pendingTargetElev=0;
   document.getElementById('inp-target-name').value='';
   document.getElementById('inp-target-height').value='';
+  document.getElementById('target-elev-disp').textContent='取得中…';
   openModal('modal-target');
   setTimeout(()=>document.getElementById('inp-target-name').focus(),100);
+  // 標高取得（非同期・モーダル表示後に更新）
+  try{ pendingTargetElev = await getElev(lat,lng); }catch(e){ pendingTargetElev=0; }
+  document.getElementById('target-elev-disp').textContent=`${pendingTargetElev.toFixed(1)} m`;
 }
 function cancelAddTarget(){
   closeModal('modal-target');
@@ -844,7 +863,7 @@ function saveTarget(){
   const height = parseFloat(document.getElementById('inp-target-height').value);
   if(!name){alert('名前を入力してください');return;}
   if(!height||height<=0){alert('高さを入力してください');return;}
-  db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height});
+  db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height, elev:pendingTargetElev});
   saveDB();
   closeModal('modal-target');
   pendingMarker=null;
@@ -892,7 +911,7 @@ function refreshMapMarkers(){
     db.tubes.filter(t=>t.festivalId===fid).forEach(t=>{
       const m = L.circleMarker([t.lat,t.lng],{
         radius:8,color:'#e8874a',fillColor:'#e8874a',fillOpacity:.8,weight:2
-      }).addTo(map).bindTooltip(`🔴 ${t.name}<br>${t.nums.join('/')}号`,{direction:'top'});
+      }).addTo(map).bindTooltip(`🔴 ${t.name}<br>${t.nums.join('/')}号　標高${(t.elev||0).toFixed(1)}m`,{direction:'top'});
       tubeMarkers.push(m);
     });
   }
@@ -903,7 +922,7 @@ function refreshMapMarkers(){
     if(tg){
       targetMarker = L.circleMarker([tg.lat,tg.lng],{
         radius:8,color:'#7eb8e8',fillColor:'#7eb8e8',fillOpacity:.8,weight:2
-      }).addTo(map).bindTooltip(`🏢 ${tg.name}<br>${tg.height}m`,{direction:'top'});
+      }).addTo(map).bindTooltip(`🏢 ${tg.name}<br>建物高 ${tg.height}m　標高 ${(tg.elev||0).toFixed(1)}m`,{direction:'top'});
     }
   }
 
@@ -947,12 +966,21 @@ function drawShootingLine(fid, tid){
 function syncSimSelects(){
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
-  if(fid) document.getElementById('sim-sel-festival').value=fid;
+  if(fid){ document.getElementById('sim-sel-festival').value=fid; refreshSimTubeSelect(); }
   if(tid) document.getElementById('sim-sel-target').value=tid;
   renderSim();
 }
 function onSimFestivalChange(){
+  refreshSimTubeSelect();
   renderSim();
+}
+function refreshSimTubeSelect(){
+  const fid = document.getElementById('sim-sel-festival').value;
+  const sel = document.getElementById('sim-sel-tube');
+  if(!sel) return;
+  const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
+  sel.innerHTML = '<option value="">全筒場</option>' +
+    tubes.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.nums.join('/')}号)</option>`).join('');
 }
 
 // ==================== スライダー ====================
@@ -974,12 +1002,13 @@ function renderSim(){
   const H = wrap.clientHeight||200;
   canvas.width=W; canvas.height=H;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
+
+  // 背景
   ctx.fillStyle='#060810';
   ctx.fillRect(0,0,W,H);
 
-  const fid   = document.getElementById('sim-sel-festival').value;
-  const tid   = document.getElementById('sim-sel-target').value;
+  const fid = document.getElementById('sim-sel-festival').value;
+  const tid = document.getElementById('sim-sel-target').value;
   if(!fid||!tid){
     ctx.fillStyle='#7a82a0';
     ctx.font='11px Space Mono,monospace';
@@ -999,223 +1028,223 @@ function renderSim(){
     return;
   }
 
+  // 選択中の筒場（sim-sel-tubeがあれば使う、なければ最初）
+  const selTubeId = (document.getElementById('sim-sel-tube')||{}).value||'';
+  const tube = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
+
   // 視点パラメータ
-  const viewDist  = parseFloat(document.getElementById('sl-dist').value);
-  const azOff     = parseFloat(document.getElementById('sl-az').value) * Math.PI/180;
-  const elevation = parseFloat(document.getElementById('sl-el').value) * Math.PI/180;
   const focal     = parseFloat(document.getElementById('sl-focal').value);
+  const azOffDeg  = parseFloat(document.getElementById('sl-az').value);
+  const elOffDeg  = parseFloat(document.getElementById('sl-el').value);
+  const viewDist  = parseFloat(document.getElementById('sl-dist').value);
+  const r = Math.PI/180;
 
-  // センサーサイズ（フルサイズ35mm換算）
-  const sensorW=36, sensorH=24; // mm
-  // 画角
-  const fovH = 2*Math.atan(sensorW/(2*focal));
-  const fovV = 2*Math.atan(sensorH/(2*focal));
+  // gnomonic投影（現行ツールと同方式）
+  // センサー35mm換算
+  const sensorW=36, sensorH=24;
+  const fovH_deg = 2*Math.atan(sensorW/(2*focal))/r;
+  const fovV_deg = 2*Math.atan(sensorH/(2*focal))/r;
+  const f_px_H = W/(2*Math.tan(fovH_deg/2*r));
+  const f_px_V = H/(2*Math.tan(fovV_deg/2*r));
+  const gnoH = deg => f_px_H * Math.tan(deg*r);
+  const gnoV = deg => f_px_V * Math.tan(deg*r);
 
-  // 1度≒111km
+  // 視点座標
   const mPerDeg = 111000;
-
-  // 筒場群の重心
-  const cLat = tubes.reduce((s,t)=>s+t.lat,0)/tubes.length;
-  const cLng = tubes.reduce((s,t)=>s+t.lng,0)/tubes.length;
-  // 対象物から筒場重心への方向
-  const dLat = cLat - tg.lat;
-  const dLng = cLng - tg.lng;
-  const dLen = Math.sqrt(dLat*dLat+dLng*dLng)||1e-9;
-  // 撮影推奨ライン方向の単位ベクトル（対象物の向こう側）
-  const uLat = -dLat/dLen;
-  const uLng = -dLng/dLen;
-
-  // 視点座標：地図クリックで手動設定済みならその座標を使う
-  // 未設定なら撮影推奨ライン上をsl-dist距離の位置に自動配置
-  let simViewLat, simViewLng;
-  if(viewManual && viewLat!==null && viewLng!==null){
-    simViewLat = viewLat;
-    simViewLng = viewLng;
+  let simViewLat, simViewLng, simViewElev;
+  if(viewManual && viewLat!==null){
+    simViewLat  = viewLat;
+    simViewLng  = viewLng;
+    simViewElev = viewElev||0;
   } else {
+    // 視点→選択筒場方向の延長上にviewDist配置
+    const dLat = tube.lat - tg.lat;
+    const dLng = tube.lng - tg.lng;
+    const dLen = Math.sqrt(dLat*dLat+dLng*dLng)||1e-9;
+    const uLat = dLat/dLen;
+    const uLng = dLng/dLen;
     const distDeg = viewDist/mPerDeg;
-    simViewLat = tg.lat + uLat*distDeg;
-    simViewLng = tg.lng + uLng*distDeg;
+    simViewLat  = tube.lat + uLat*distDeg;
+    simViewLng  = tube.lng + uLng*distDeg;
+    simViewElev = 0;
   }
 
-  // 3D投影関数（簡易透視投影）
-  // 視点→各物体の相対座標(m)をスクリーン座標に変換
-  // X=東西, Z=南北, Y=高さ
-  function toScreen(objLat, objLng, objAlt){
-    const dx = (objLng - simViewLng)*mPerDeg*Math.cos(tg.lat*Math.PI/180);
-    const dz = (objLat - simViewLat)*mPerDeg;
-    const dy = objAlt; // 高さ（m）
-
-    // 視線方向：撮影ライン方向 + azOff水平回転
-    // 基本方向ベクトル（筒場群重心→対象物）
-    const baseAz = Math.atan2(
-      (tg.lng-simViewLng)*Math.cos(tg.lat*Math.PI/180),
-      tg.lat-simViewLat
-    );
-    const az = baseAz + azOff;
-    const el = elevation;
-
-    // カメラ座標系に変換
-    const cosAz=Math.cos(az), sinAz=Math.sin(az);
-    const cosEl=Math.cos(el), sinEl=Math.sin(el);
-    // カメラ前方
-    const cx =  sinAz*cosEl;
-    const cy =  sinEl;
-    const cz =  cosAz*cosEl;
-    // カメラ右方向
-    const rx = cosAz;
-    const ry = 0;
-    const rz = -sinAz;
-    // カメラ上方向（外積）
-    const ux = cz*ry-cy*rz;
-    const uy = cx*rz-cz*rx;
-    const uz = cy*rx-cx*ry;
-
-    const depth = dx*cx + dy*cy + dz*cz;
-    if(depth<=0) return null;
-    const right = dx*rx + dy*ry + dz*rz;
-    const up    = dx*ux + dy*uy + dz*uz;
-
-    // 正規化（画角基準）
-    const normX = right/depth * (focal/(sensorW/2));
-    const normY = up/depth    * (focal/(sensorH/2));
-
-    return {
-      sx: W/2 + normX*(W/2),
-      sy: H/2 - normY*(H/2),
-      depth
-    };
+  // 仰角計算（現行ツールのelAng相当、簡易版）
+  function calcVA(distKm, viewElev, objElev, objHeight){
+    return Math.atan2((objElev+objHeight)-viewElev, distKm*1000)*180/Math.PI;
+  }
+  function calcVABase(distKm, viewElev, objElev){
+    return Math.atan2(objElev-viewElev, distKm*1000)*180/Math.PI;
   }
 
-  // 地平線
-  const horizon = toScreen(tg.lat+0.01, tg.lng, 0);
-  const hY = horizon ? Math.min(Math.max(horizon.sy, H*0.3), H*0.8) : H*0.65;
+  // 視点→選択筒場の水平距離・方位
+  const distTube = hav(simViewLat,simViewLng,tube.lat,tube.lng);
+  const azTube   = brng(simViewLat,simViewLng,tube.lat,tube.lng); // カメラの基本方位
+
+  // カメラ方位：基本=視点→選択筒場、±azOffDeg
+  const camAz = azTube + azOffDeg;
+
+  // 仰角オフセット
+  const camElOfs = elOffDeg;
+
+  // toX: 方位azDiffによる水平gnomonic変換
+  const cx = W/2;
+  function toX(objLat, objLng){
+    const az = brng(simViewLat,simViewLng,objLat,objLng);
+    const daz = ((az - camAz + 540)%360) - 180;
+    return cx + gnoH(daz);
+  }
+
+  // α_cam（カメラ光軸仰角）：対象物の頂点が画面中央に来るよう自動調整
+  const tubeElev = tube.elev||0;
+  const maxRow = tube.nums.reduce((best,n)=>{
+    const row=db.numTable.find(r=>r.num===n);
+    return(row&&row.height>(best?best.height:0))?row:best;
+  }, null);
+  const vaBase = calcVABase(distTube||0.001, simViewElev, tubeElev) + camElOfs;
+
+  // 対象物頂点の仰角を画面中央に合わせる
+  const distTgForCam = hav(simViewLat,simViewLng,tg.lat,tg.lng)||0.001;
+  const vaTgTopForCam = calcVA(distTgForCam, simViewElev, tg.elev||0, tg.height) + camElOfs;
+  // α_cam = 対象頂点の仰角（→ toY(vaTgTopForCam) = H/2 が成立）
+  const alpha_cam = vaTgTopForCam * r;
+  const toY = alt => H/2 - f_px_V*Math.tan(alt*r - alpha_cam);
+
+  // 地平線Y
+  const horizonY = toY(0);
+  const hY = Math.min(Math.max(horizonY, H*0.3), H*0.85);
 
   // 空グラデーション
-  const grad = ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#060810');
-  grad.addColorStop(1,'#0d1020');
-  ctx.fillStyle=grad;
-  ctx.fillRect(0,0,W,H);
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#060810');
+  sky.addColorStop(1,'#0d1422');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
 
   // 地面
   ctx.fillStyle='#0a0e1a';
   ctx.fillRect(0,hY,W,H-hY);
-  ctx.strokeStyle='rgba(37,42,64,0.6)';
-  ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(0,hY);ctx.lineTo(W,hY);ctx.stroke();
+  ctx.strokeStyle='rgba(200,169,110,0.4)';
+  ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(0,hY); ctx.lineTo(W,hY); ctx.stroke();
+  ctx.setLineDash([]);
 
-  // 対象物（矩形シルエット）
-  const tgBase = toScreen(tg.lat, tg.lng, 0);
-  const tgTop  = toScreen(tg.lat, tg.lng, tg.height);
-  if(tgBase&&tgTop){
-    const bw = Math.max(4, (tgBase.sx-tgTop.sx)*0.5+8); // 幅の簡易推定
-    const bx = tgTop.sx - bw/2;
-    const bh = tgBase.sy - tgTop.sy;
-    if(bh>0){
-      ctx.fillStyle='rgba(126,184,232,0.25)';
-      ctx.strokeStyle='rgba(126,184,232,0.6)';
-      ctx.lineWidth=1.5;
-      ctx.fillRect(bx,tgTop.sy,bw,bh);
-      ctx.strokeRect(bx,tgTop.sy,bw,bh);
-      ctx.fillStyle='rgba(126,184,232,0.7)';
-      ctx.font='8px Space Mono,monospace';
-      ctx.textAlign='center';
-      ctx.fillText(`${tg.name} ${tg.height}m`,tgTop.sx,tgTop.sy-4);
-    }
-  }
+  // 対象物シルエット（矩形）
+  const tgElev   = tg.elev||0;
+  const distTg   = hav(simViewLat,simViewLng,tg.lat,tg.lng)||0.001;
+  const vaTgTop  = calcVA(distTg, simViewElev, tgElev, tg.height) + camElOfs;
+  const vaTgBase = calcVABase(distTg, simViewElev, tgElev) + camElOfs;
+  const tgX  = toX(tg.lat, tg.lng);
+  const tgTY = toY(vaTgTop);
+  const tgBY = Math.max(toY(vaTgBase), tgTY+2);
+  // 幅：建物の見かけ幅（物理幅を距離から計算、最低8px）
+  const physW = Math.max(10, tg.height*0.3); // 簡易：高さの30%を幅と仮定
+  const tgAngW = Math.atan2(physW/2, distTg*1000)*180/Math.PI;
+  const tgW    = Math.max(8, gnoH(tgAngW)*2);
+  ctx.fillStyle='rgba(126,184,232,0.2)';
+  ctx.strokeStyle='rgba(126,184,232,0.7)';
+  ctx.lineWidth=1.5;
+  ctx.fillRect(tgX-tgW/2, tgTY, tgW, tgBY-tgTY);
+  ctx.strokeRect(tgX-tgW/2, tgTY, tgW, tgBY-tgTY);
+  // ラベル
+  ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(126,184,232,0.9)';
+  ctx.fillText(`${tg.name} ${(tgElev+tg.height).toFixed(0)}m`, tgX, tgTY-5);
 
-  // 各筒場の各号数の花火
-  tubes.forEach((tube,ti)=>{
+  // 各筒場の花火描画
+  const CV_COLORS=['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
+  tubes.forEach((tb, ti)=>{
+    const isSelected = (tb.id === tube.id);
     const color = CV_COLORS[ti % CV_COLORS.length];
-    tube.nums.forEach((numStr,ni)=>{
+    const tbElev  = tb.elev||0;
+    const distTb  = hav(simViewLat,simViewLng,tb.lat,tb.lng)||0.001;
+    const tbX     = toX(tb.lat, tb.lng);
+    const tbBaseY = toY(calcVABase(distTb, simViewElev, tbElev) + camElOfs);
+
+    tb.nums.forEach((numStr, ni)=>{
       const row = db.numTable.find(r=>r.num===numStr);
       if(!row) return;
-      const fw = toScreen(tube.lat, tube.lng, row.height);
-      if(!fw) return;
+      const vaFW  = calcVA(distTb, simViewElev, tbElev, row.height) + camElOfs;
+      const fwY   = toY(vaFW);
+      // 開花半径をgnomonic投影で計算
+      const angR  = Math.atan2(row.dia/2, distTb*1000)*180/Math.PI;
+      const radPx = Math.max(3, gnoH(angR));
 
-      const radiusM = row.dia/2;
-      // 開花半径をスクリーン上のピクセルに換算（奥行きベース）
-      const depth = fw.depth;
-      const radiusPx = Math.max(3, (radiusM/depth) * focal/(sensorW/2) * (W/2));
+      // 選択中の筒場は不透明、他は半透明
+      const alpha = isSelected ? 0.9 : 0.35;
 
-      // 放射状花火描画
+      // 放射状花火
       const rays = 16;
-      const innerR = radiusPx * 0.15;
+      const innerR = radPx*0.15;
       ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.85 - ni*0.1;
+      ctx.globalAlpha = alpha;
       for(let i=0;i<rays;i++){
         const angle = (i/rays)*Math.PI*2;
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = isSelected ? 1.5 : 0.8;
         ctx.beginPath();
-        ctx.moveTo(fw.sx + Math.cos(angle)*innerR, fw.sy + Math.sin(angle)*innerR);
-        ctx.lineTo(fw.sx + Math.cos(angle)*radiusPx, fw.sy + Math.sin(angle)*radiusPx);
+        ctx.moveTo(tbX+Math.cos(angle)*innerR, fwY+Math.sin(angle)*innerR);
+        ctx.lineTo(tbX+Math.cos(angle)*radPx,  fwY+Math.sin(angle)*radPx);
         ctx.stroke();
         // 枝
-        const midX = fw.sx + Math.cos(angle)*radiusPx*0.6;
-        const midY = fw.sy + Math.sin(angle)*radiusPx*0.6;
-        const brA1 = angle + 0.3;
-        const brA2 = angle - 0.3;
-        ctx.lineWidth=0.7;
-        ctx.beginPath();
-        ctx.moveTo(midX,midY);
-        ctx.lineTo(midX+Math.cos(brA1)*radiusPx*0.3, midY+Math.sin(brA1)*radiusPx*0.3);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(midX,midY);
-        ctx.lineTo(midX+Math.cos(brA2)*radiusPx*0.3, midY+Math.sin(brA2)*radiusPx*0.3);
-        ctx.stroke();
+        const mid = 0.6;
+        ctx.lineWidth = isSelected ? 0.8 : 0.5;
+        [[0.3],[-0.3]].forEach(([off])=>{
+          ctx.beginPath();
+          ctx.moveTo(tbX+Math.cos(angle)*radPx*mid, fwY+Math.sin(angle)*radPx*mid);
+          ctx.lineTo(tbX+Math.cos(angle+off)*radPx*0.9, fwY+Math.sin(angle+off)*radPx*0.9);
+          ctx.stroke();
+        });
       }
-      // 外円（開花径の輪郭）
-      ctx.globalAlpha=0.2;
-      ctx.strokeStyle=color;
-      ctx.lineWidth=0.7;
+      // 開花径の輪郭
+      ctx.globalAlpha = alpha*0.25;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.7;
       ctx.setLineDash([2,3]);
-      ctx.beginPath();ctx.arc(fw.sx,fw.sy,radiusPx,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath(); ctx.arc(tbX,fwY,radPx,0,Math.PI*2); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.globalAlpha=1;
+      ctx.globalAlpha = 1;
 
-      // ラベル
-      ctx.fillStyle=color;
-      ctx.globalAlpha=0.85;
-      ctx.font='8px Space Mono,monospace';
-      ctx.textAlign='left';
-      ctx.fillText(`${tube.name} ${numStr}号`,fw.sx+radiusPx+3,fw.sy-2);
-      ctx.globalAlpha=1;
-
-      // 筒場から花火まで点線（揚げ軌跡）
-      const tubeBase = toScreen(tube.lat, tube.lng, 0);
-      if(tubeBase){
-        ctx.strokeStyle=color;
-        ctx.globalAlpha=0.15;
-        ctx.lineWidth=0.8;
-        ctx.setLineDash([2,4]);
-        ctx.beginPath();ctx.moveTo(tubeBase.sx,tubeBase.sy);ctx.lineTo(fw.sx,fw.sy);ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha=1;
-        // 筒場マーカー
-        ctx.fillStyle=color;
-        ctx.globalAlpha=0.6;
-        ctx.beginPath();ctx.arc(tubeBase.sx,tubeBase.sy,3,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=1;
+      // ラベル（選択中のみ表示）
+      if(isSelected){
+        ctx.fillStyle = color;
+        ctx.font = '8px Space Mono,monospace';
+        ctx.textAlign = 'left';
+        ctx.globalAlpha = 0.9;
+        ctx.fillText(`${tb.name} ${numStr}号`, tbX+radPx+3, fwY-2);
+        ctx.globalAlpha = 1;
       }
     });
+
+    // 筒場→花火の軌跡点線（選択中のみ）
+    if(isSelected){
+      const topRow = tb.nums.reduce((best,n)=>{
+        const rr=db.numTable.find(r=>r.num===n);
+        return(rr&&rr.height>(best?best.height:0))?rr:best;
+      },null);
+      if(topRow){
+        const topY = toY(calcVA(distTb,simViewElev,tbElev,topRow.height)+camElOfs);
+        ctx.strokeStyle=color; ctx.globalAlpha=0.2; ctx.lineWidth=0.8;
+        ctx.setLineDash([2,4]);
+        ctx.beginPath(); ctx.moveTo(tbX,tbBaseY); ctx.lineTo(tbX,topY); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha=1;
+      }
+      // 筒場マーカー
+      ctx.fillStyle=color; ctx.globalAlpha=0.8;
+      ctx.beginPath(); ctx.arc(tbX,tbBaseY,4,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1;
+    }
   });
 
   // 情報テキスト
   const fName = (db.festivals.find(f=>f.id===fid)||{}).name||'';
+  const azInfo = ((camAz%360)+360)%360;
   document.getElementById('sim-info').textContent =
-    `視点距離:${viewDist}m  方位:${document.getElementById('sl-az').value}°  仰角:${document.getElementById('sl-el').value}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
+    `方位:${azInfo.toFixed(0)}°  仰角オフ:${elOffDeg}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
 
-  // 地図連携ボタン更新（GoogleマップURL・StreetView URL）
-  // 方位角：視点→対象物のベース方位 + 左右オフセット
-  const _baseAz = Math.atan2(
-    (tg.lng - simViewLng)*Math.cos(tg.lat*Math.PI/180),
-    tg.lat - simViewLat
-  );
-  updateMapBtns(simViewLat, simViewLng, _baseAz + azOff);
-  // 視点ラベル・情報更新（大会/対象選択変更時にも反映）
+  // 地図連携ボタン更新
+  updateMapBtns(simViewLat, simViewLng, camAz*r);
   if(viewManual) updateViewLabel();
 }
+
 
 // ==================== 設定モーダル ====================
 function openSettings(){
