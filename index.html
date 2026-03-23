@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>HANABI PLANNER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --bg:#0a0c14;--sur:#111320;--sur2:#181c2e;
+  --bd:#252a40;--ac:#e8874a;--ac2:#7eb8e8;
+  --tx:#e8eaf0;--sub:#7a82a0;
+  --hdr:40px;--pnl:210px;--mob-bar:0px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;overflow:hidden;}
+
+/* ヘッダー */
+#hdr{height:var(--hdr);display:flex;align-items:center;gap:10px;padding:0 14px;
+  border-bottom:1px solid var(--bd);background:var(--bg);position:relative;z-index:100;}
+#hdr h1{font-size:12px;color:var(--ac);letter-spacing:.1em;flex:1;}
+#hdr .hbtn{background:none;border:1px solid var(--bd);color:var(--sub);border-radius:4px;
+  padding:3px 8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;}
+#hdr .hbtn:hover{border-color:var(--ac);color:var(--ac);}
+
+/* メインレイアウト */
+#wrap{position:fixed;top:var(--hdr);bottom:0;left:0;right:0;display:flex;overflow:hidden;}
+
+/* 左パネル */
+#pnl{width:var(--pnl);flex-shrink:0;background:var(--sur);
+  border-right:1px solid var(--bd);overflow-y:auto;overflow-x:hidden;padding:8px;}
+#pnl::-webkit-scrollbar{width:3px;}
+#pnl::-webkit-scrollbar-thumb{background:var(--bd);}
+
+.sec{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--ac);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;margin-top:8px;}
+.sec:first-child{margin-top:0;}
+.sec::after{content:'';flex:1;height:1px;background:var(--bd);}
+
+.ig{display:flex;flex-direction:column;gap:3px;margin-bottom:5px;}
+.ig label{font-size:8.5px;color:var(--sub);}
+.ig select,.ig input[type=text],.ig input[type=number]{
+  background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+  padding:4px 6px;color:var(--tx);font-family:'Space Mono',monospace;font-size:10px;width:100%;}
+.ig select:focus,.ig input:focus{border-color:var(--ac);outline:none;}
+.ig select option{background:var(--sur2);}
+
+.pb{background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+  color:var(--tx);padding:4px 7px;cursor:pointer;font-family:'Space Mono',monospace;
+  font-size:9px;width:100%;text-align:center;}
+.pb:hover{border-color:var(--ac);color:var(--ac);}
+.pb.pri{background:rgba(232,135,74,.15);border-color:var(--ac);color:var(--ac);}
+.pb.pri:hover{background:rgba(232,135,74,.25);}
+.pb.danger{border-color:#e05;color:#e05;}
+.pb.danger:hover{background:rgba(238,0,85,.1);}
+.pb.sm{padding:3px 6px;font-size:8.5px;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+
+/* 筒場リスト */
+.tube-item{background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+  padding:4px 6px;margin-bottom:3px;display:flex;align-items:center;gap:4px;}
+.tube-item .ti-name{flex:1;font-size:9.5px;color:var(--tx);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tube-item .ti-nums{font-size:8px;color:var(--sub);}
+.tube-item .ti-del{color:var(--sub);cursor:pointer;font-size:11px;flex-shrink:0;padding:0 2px;}
+.tube-item .ti-del:hover{color:#e05;}
+
+/* 号数チェックボックスグリッド */
+.num-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:4px;}
+.num-cb{display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;
+  background:var(--sur2);border:1px solid var(--bd);border-radius:3px;padding:3px 2px;}
+.num-cb:hover{border-color:var(--sub);}
+.num-cb.checked{border-color:var(--ac);background:rgba(232,135,74,.12);}
+.num-cb span{font-size:8px;color:var(--sub);pointer-events:none;}
+.num-cb.checked span{color:var(--ac);}
+.num-cb input{display:none;}
+
+/* 右エリア */
+#right{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
+
+/* 地図 */
+#mapbox{flex:1;min-height:0;position:relative;overflow:hidden;}
+#map{width:100%;height:100%;}
+
+/* 地図モードバッジ */
+#map-mode{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:500;
+  display:flex;gap:4px;}
+.mm-btn{background:rgba(10,12,20,.85);border:1px solid var(--bd);color:var(--sub);
+  border-radius:12px;padding:3px 10px;cursor:pointer;font-family:'Space Mono',monospace;
+  font-size:9px;backdrop-filter:blur(4px);}
+.mm-btn.active{border-color:var(--ac);color:var(--ac);}
+.mm-btn.active.target{border-color:var(--ac2);color:var(--ac2);}
+
+/* シミュレーターパネル */
+#sim-panel{flex-shrink:0;border-top:1px solid var(--bd);background:var(--sur);
+  display:flex;flex-direction:column;overflow:hidden;}
+
+#sim-header{display:flex;align-items:center;gap:6px;padding:6px 10px;
+  border-bottom:1px solid var(--bd);flex-shrink:0;}
+#sim-header select{background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+  padding:3px 6px;color:var(--tx);font-family:'Space Mono',monospace;font-size:10px;}
+#sim-header select:focus{border-color:var(--ac);outline:none;}
+#sim-header select option{background:var(--sur2);}
+#sim-header .slabel{font-size:9px;color:var(--sub);}
+#sim-header .sx{color:var(--bd);font-size:12px;}
+
+#sim-body{flex:1;min-height:0;display:flex;overflow:hidden;}
+
+/* スライダーパネル */
+#sliders{width:160px;flex-shrink:0;padding:8px;border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;gap:6px;justify-content:center;}
+.sl-row{display:flex;flex-direction:column;gap:2px;}
+.sl-row label{font-size:8px;color:var(--sub);display:flex;justify-content:space-between;}
+.sl-row label span{color:var(--ac);font-size:8px;}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;
+  background:var(--bd);border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;
+  border-radius:50%;background:var(--ac);cursor:pointer;}
+
+/* Canvasエリア */
+#cv-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
+  background:#060810;position:relative;overflow:hidden;}
+#sim-canvas{display:block;}
+
+/* 情報表示 */
+#sim-info{position:absolute;bottom:6px;left:8px;font-size:8px;color:var(--sub);
+  line-height:1.6;pointer-events:none;}
+
+/* モーダル共通 */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:2000;
+  background:rgba(0,0,0,.7);align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--sur);border:1px solid var(--bd);border-radius:8px;
+  padding:16px;min-width:300px;max-width:90vw;max-height:85vh;overflow-y:auto;}
+.modal h2{font-size:11px;color:var(--ac);letter-spacing:.08em;margin-bottom:12px;}
+.modal .mig{display:flex;flex-direction:column;gap:3px;margin-bottom:10px;}
+.modal .mig label{font-size:8.5px;color:var(--sub);}
+.modal .mig input,.modal .mig select{
+  background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+  padding:5px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:10px;width:100%;}
+.modal .mig input:focus,.modal .mig select:focus{border-color:var(--ac);outline:none;}
+.modal-btns{display:flex;gap:6px;margin-top:12px;}
+.modal-btns .pb{flex:1;}
+
+/* 設定モーダル：号数テーブル */
+.num-table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px;}
+.num-table th{color:var(--sub);padding:4px 6px;border-bottom:1px solid var(--bd);text-align:left;}
+.num-table td{padding:3px 4px;border-bottom:1px solid rgba(37,42,64,.5);}
+.num-table input{background:var(--sur2);border:1px solid var(--bd);border-radius:3px;
+  padding:2px 4px;color:var(--tx);font-family:'Space Mono',monospace;font-size:9px;width:70px;}
+.num-table input:focus{border-color:var(--ac);outline:none;}
+
+/* 地図ポップアップ */
+.map-popup{background:var(--sur);border:1px solid var(--bd);border-radius:6px;
+  padding:10px;min-width:180px;}
+.map-popup h3{font-size:10px;color:var(--ac);margin-bottom:8px;}
+.map-popup .mig{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;}
+.map-popup .mig label{font-size:8px;color:var(--sub);}
+.map-popup .mig input,.map-popup .mig select{
+  background:var(--bg);border:1px solid var(--bd);border-radius:3px;
+  padding:3px 5px;color:var(--tx);font-family:'Space Mono',monospace;font-size:9px;width:100%;}
+.map-popup .mig input:focus,.map-popup .mig select:focus{border-color:var(--ac);outline:none;}
+.leaflet-popup-content-wrapper{background:transparent!important;border:none!important;
+  box-shadow:none!important;padding:0!important;}
+.leaflet-popup-content{margin:0!important;}
+.leaflet-popup-tip{background:var(--bd)!important;}
+
+/* スマホ対応 */
+@media(max-width:600px){
+  :root{--hdr:0px;--mob-bar:44px;}
+  #wrap{top:0;bottom:var(--mob-bar);}
+  #pnl{display:none;position:fixed;inset:0;top:0;width:100%;z-index:1000;
+    background:var(--sur);padding:12px;}
+  #pnl.open{display:flex;flex-direction:column;}
+  #right{flex-direction:column;}
+  #mapbox{flex:none;height:45vh;}
+  #sim-panel{flex:1;min-height:0;}
+  #sliders{width:120px;}
+  #mob-bar{display:flex!important;}
+}
+
+#mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--mob-bar);
+  background:var(--sur);border-top:1px solid var(--bd);
+  z-index:900;align-items:center;justify-content:space-around;padding:0 8px;}
+#mob-bar .mb-btn{background:none;border:none;color:var(--sub);cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:8px;display:flex;flex-direction:column;
+  align-items:center;gap:2px;padding:4px 8px;}
+#mob-bar .mb-btn.active{color:var(--ac);}
+#mob-bar .mb-btn .icon{font-size:16px;}
+
+/* ノーデータ */
+.no-data{text-align:center;color:var(--sub);font-size:9px;padding:12px 0;line-height:1.8;}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div id="hdr">
+  <h1>🎆 HANABI PLANNER</h1>
+  <button class="hbtn" onclick="openSettings()">⚙ 設定</button>
+</div>
+
+<!-- メインラップ -->
+<div id="wrap">
+
+  <!-- 左パネル -->
+  <div id="pnl">
+
+    <!-- 花火大会 -->
+    <div class="sec">🎆 花火大会</div>
+    <div class="ig">
+      <label>大会を選択</label>
+      <select id="sel-festival" onchange="onFestivalChange()">
+        <option value="">-- 大会を選択 --</option>
+      </select>
+    </div>
+    <div class="row2" style="margin-bottom:6px;">
+      <button class="pb sm" onclick="openAddFestival()">＋ 新規大会</button>
+      <button class="pb sm" id="btn-edit-festival" onclick="openEditFestival()" disabled>✎ 編集</button>
+    </div>
+
+    <!-- 筒場リスト -->
+    <div id="tube-section" style="display:none;">
+      <div class="sec">🔴 筒場</div>
+      <div id="tube-list"></div>
+      <button class="pb sm pri" onclick="startAddTube()">＋ 地図で筒場を追加</button>
+    </div>
+
+    <!-- 対象物 -->
+    <div class="sec" style="margin-top:10px;">🏢 対象物</div>
+    <div class="ig">
+      <label>対象物を選択</label>
+      <select id="sel-target" onchange="onTargetChange()">
+        <option value="">-- 対象物を選択 --</option>
+      </select>
+    </div>
+    <div class="row2" style="margin-bottom:6px;">
+      <button class="pb sm" onclick="startAddTarget()">＋ 地図で追加</button>
+      <button class="pb sm" id="btn-del-target" onclick="deleteTarget()" disabled>✕ 削除</button>
+    </div>
+
+    <!-- スマホ用閉じるボタン -->
+    <div style="margin-top:auto;padding-top:12px;">
+      <button class="pb" style="display:none;" id="pnl-close" onclick="closeMobPanel()">✕ 閉じる</button>
+    </div>
+  </div>
+
+  <!-- 右エリア -->
+  <div id="right">
+
+    <!-- 地図 -->
+    <div id="mapbox">
+      <div id="map"></div>
+      <div id="map-mode">
+        <button class="mm-btn active" id="mm-none" onclick="setMapMode('none')">📍 通常</button>
+        <button class="mm-btn" id="mm-tube" onclick="setMapMode('tube')">🔴 筒場追加</button>
+        <button class="mm-btn target" id="mm-target" onclick="setMapMode('target')">🏢 対象物追加</button>
+      </div>
+    </div>
+
+    <!-- シミュレーターパネル -->
+    <div id="sim-panel" style="height:45%;">
+      <div id="sim-header">
+        <span class="slabel">大会</span>
+        <select id="sim-sel-festival" onchange="onSimFestivalChange()">
+          <option value="">--</option>
+        </select>
+        <span class="sx">×</span>
+        <span class="slabel">対象</span>
+        <select id="sim-sel-target" onchange="renderSim()">
+          <option value="">--</option>
+        </select>
+      </div>
+      <div id="sim-body">
+        <div id="sliders">
+          <div class="sl-row">
+            <label>前後距離 <span id="lbl-dist">500m</span></label>
+            <input type="range" id="sl-dist" min="50" max="5000" value="500" step="10" oninput="onSlider()">
+          </div>
+          <div class="sl-row">
+            <label>左右方向 <span id="lbl-az">0°</span></label>
+            <input type="range" id="sl-az" min="-60" max="60" value="0" step="1" oninput="onSlider()">
+          </div>
+          <div class="sl-row">
+            <label>仰角 <span id="lbl-el">15°</span></label>
+            <input type="range" id="sl-el" min="0" max="80" value="15" step="1" oninput="onSlider()">
+          </div>
+          <div class="sl-row">
+            <label>焦点距離 <span id="lbl-focal">200mm</span></label>
+            <input type="range" id="sl-focal" min="24" max="800" value="200" step="1" oninput="onSlider()">
+          </div>
+        </div>
+        <div id="cv-wrap">
+          <canvas id="sim-canvas"></canvas>
+          <div id="sim-info"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #right -->
+</div><!-- #wrap -->
+
+<!-- スマホ用ボトムバー -->
+<div id="mob-bar">
+  <button class="mb-btn" onclick="toggleMobPanel()">
+    <span class="icon">☰</span>登録
+  </button>
+  <button class="mb-btn active">
+    <span class="icon">🎆</span>シミュ
+  </button>
+</div>
+
+<!-- ===== モーダル: 新規大会 ===== -->
+<div class="modal-overlay" id="modal-festival">
+  <div class="modal">
+    <h2>🎆 花火大会を登録</h2>
+    <div class="mig">
+      <label>大会名</label>
+      <input type="text" id="inp-festival-name" placeholder="例：○○花火大会 2025">
+    </div>
+    <div class="mig">
+      <label>メモ（任意）</label>
+      <input type="text" id="inp-festival-memo" placeholder="例：8月15日・淀川">
+    </div>
+    <div class="modal-btns">
+      <button class="pb" onclick="closeModal('modal-festival')">キャンセル</button>
+      <button class="pb pri" onclick="saveFestival()">登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル: 筒場追加（地図クリック後） ===== -->
+<div class="modal-overlay" id="modal-tube">
+  <div class="modal">
+    <h2>🔴 筒場を登録</h2>
+    <div class="mig">
+      <label>筒場名</label>
+      <input type="text" id="inp-tube-name" placeholder="例：第1筒場・東側">
+    </div>
+    <div class="mig">
+      <label>大会</label>
+      <select id="inp-tube-festival"></select>
+    </div>
+    <div class="mig">
+      <label>使用号数（複数選択可）</label>
+      <div class="num-grid" id="tube-num-grid"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="pb" onclick="cancelAddTube()">キャンセル</button>
+      <button class="pb pri" onclick="saveTube()">登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル: 対象物追加（地図クリック後） ===== -->
+<div class="modal-overlay" id="modal-target">
+  <div class="modal">
+    <h2>🏢 対象物を登録</h2>
+    <div class="mig">
+      <label>名前</label>
+      <input type="text" id="inp-target-name" placeholder="例：通天閣・○○橋">
+    </div>
+    <div class="mig">
+      <label>高さ (m)</label>
+      <input type="number" id="inp-target-height" placeholder="例：103" min="1" max="2000">
+    </div>
+    <div class="modal-btns">
+      <button class="pb" onclick="cancelAddTarget()">キャンセル</button>
+      <button class="pb pri" onclick="saveTarget()">登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル: 設定（号数テーブル） ===== -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal" style="min-width:340px;">
+    <h2>⚙ 設定 — 号数テーブル</h2>
+    <p style="font-size:8.5px;color:var(--sub);margin-bottom:10px;line-height:1.6;">
+      出典：煙火消費保安基準・磯谷煙火店実測データ等。<br>実際の花火は条件によりばらつきがあります。
+    </p>
+    <table class="num-table" id="num-table">
+      <thead><tr><th>号数</th><th>高度(m)</th><th>開花径(m)</th></tr></thead>
+      <tbody id="num-table-body"></tbody>
+    </table>
+    <div class="row2" style="gap:6px;margin-bottom:8px;">
+      <button class="pb sm" onclick="resetNumTable()">↺ デフォルトに戻す</button>
+      <button class="pb sm pri" onclick="saveNumTable()">保存</button>
+    </div>
+    <button class="pb" onclick="closeModal('modal-settings')">閉じる</button>
+  </div>
+</div>
+
+<script>
+// ==================== デフォルト号数テーブル ====================
+const DEFAULT_NUM_TABLE = [
+  {num:'2.5', height:80,  dia:50},
+  {num:'3',   height:120, dia:100},
+  {num:'4',   height:150, dia:120},
+  {num:'5',   height:200, dia:150},
+  {num:'6',   height:220, dia:180},
+  {num:'7',   height:250, dia:210},
+  {num:'8',   height:280, dia:250},
+  {num:'10',  height:300, dia:280},
+  {num:'20',  height:470, dia:510},
+  {num:'30',  height:600, dia:625},
+  {num:'40',  height:725, dia:725},
+];
+
+// ==================== データストア ====================
+let db = {
+  festivals: [],   // {id, name, memo}
+  tubes: [],       // {id, festivalId, name, lat, lng, nums:[]}
+  targets: [],     // {id, name, lat, lng, height}
+  numTable: JSON.parse(JSON.stringify(DEFAULT_NUM_TABLE)),
+};
+
+function loadDB(){
+  try{
+    const s = localStorage.getItem('hanabiPlanner');
+    if(s){
+      const d = JSON.parse(s);
+      db.festivals = d.festivals||[];
+      db.tubes     = d.tubes||[];
+      db.targets   = d.targets||[];
+      db.numTable  = d.numTable||JSON.parse(JSON.stringify(DEFAULT_NUM_TABLE));
+    }
+  }catch(e){}
+}
+function saveDB(){
+  localStorage.setItem('hanabiPlanner', JSON.stringify(db));
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+// ==================== 地図 ====================
+let map, mapMode='none';
+let pendingMarker=null; // 仮マーカー（クリック後・登録前）
+let tubeMarkers=[], targetMarker=null;
+
+function initMap(){
+  map = L.map('map',{zoomControl:true}).setView([34.7,135.5],10);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
+  map.on('click', onMapClick);
+}
+
+function setMapMode(mode){
+  mapMode = mode;
+  ['mm-none','mm-tube','mm-target'].forEach(id=>{
+    document.getElementById(id).classList.remove('active');
+  });
+  document.getElementById('mm-'+mode).classList.add('active');
+  map.getContainer().style.cursor = mode==='none'?'':'crosshair';
+}
+
+function onMapClick(e){
+  if(mapMode==='none') return;
+  const {lat,lng} = e.latlng;
+  // 仮マーカーを置く
+  if(pendingMarker) map.removeLayer(pendingMarker);
+  const color = mapMode==='tube'?'#e8874a':'#7eb8e8';
+  pendingMarker = L.circleMarker([lat,lng],{
+    radius:7,color,fillColor:color,fillOpacity:.7,weight:2
+  }).addTo(map);
+
+  if(mapMode==='tube'){
+    openAddTubeModal(lat,lng);
+  } else if(mapMode==='target'){
+    openAddTargetModal(lat,lng);
+  }
+}
+
+// ==================== 花火大会 ====================
+let editingFestivalId = null;
+let pendingTubeLat=null, pendingTubeLng=null;
+let pendingTargetLat=null, pendingTargetLng=null;
+
+function openAddFestival(){
+  editingFestivalId = null;
+  document.getElementById('inp-festival-name').value='';
+  document.getElementById('inp-festival-memo').value='';
+  document.getElementById('modal-festival').querySelector('h2').textContent='🎆 花火大会を登録';
+  openModal('modal-festival');
+  setTimeout(()=>document.getElementById('inp-festival-name').focus(),100);
+}
+function openEditFestival(){
+  const fid = document.getElementById('sel-festival').value;
+  if(!fid) return;
+  const f = db.festivals.find(x=>x.id===fid);
+  if(!f) return;
+  editingFestivalId = fid;
+  document.getElementById('inp-festival-name').value=f.name;
+  document.getElementById('inp-festival-memo').value=f.memo||'';
+  document.getElementById('modal-festival').querySelector('h2').textContent='🎆 大会を編集';
+  openModal('modal-festival');
+}
+function saveFestival(){
+  const name = document.getElementById('inp-festival-name').value.trim();
+  if(!name){alert('大会名を入力してください');return;}
+  const memo = document.getElementById('inp-festival-memo').value.trim();
+  if(editingFestivalId){
+    const f = db.festivals.find(x=>x.id===editingFestivalId);
+    if(f){f.name=name;f.memo=memo;}
+  } else {
+    db.festivals.push({id:uid(),name,memo});
+  }
+  saveDB();
+  closeModal('modal-festival');
+  refreshFestivalSelects();
+  // 新規なら最後の大会を選択
+  if(!editingFestivalId){
+    const last = db.festivals[db.festivals.length-1];
+    document.getElementById('sel-festival').value = last.id;
+    onFestivalChange();
+  } else {
+    refreshFestivalSelects();
+  }
+}
+
+function onFestivalChange(){
+  const fid = document.getElementById('sel-festival').value;
+  document.getElementById('btn-edit-festival').disabled = !fid;
+  const sec = document.getElementById('tube-section');
+  sec.style.display = fid ? 'block' : 'none';
+  renderTubeList();
+  syncSimSelects();
+  refreshMapMarkers();
+}
+
+function refreshFestivalSelects(){
+  const opts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
+  const empty = '<option value="">-- 大会を選択 --</option>';
+  document.getElementById('sel-festival').innerHTML = empty + opts;
+  document.getElementById('sim-sel-festival').innerHTML = empty + opts;
+  document.getElementById('inp-tube-festival').innerHTML = opts;
+  // 編集中の値を復元
+  onFestivalChange();
+}
+
+// ==================== 筒場 ====================
+function startAddTube(){
+  setMapMode('tube');
+}
+function openAddTubeModal(lat,lng){
+  pendingTubeLat=lat; pendingTubeLng=lng;
+  document.getElementById('inp-tube-name').value='';
+  // 大会選択を現在選択中に
+  const fid = document.getElementById('sel-festival').value;
+  const sel = document.getElementById('inp-tube-festival');
+  sel.innerHTML = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
+  if(fid) sel.value=fid;
+  // 号数グリッド
+  buildNumGrid('tube-num-grid',[]);
+  openModal('modal-tube');
+  setTimeout(()=>document.getElementById('inp-tube-name').focus(),100);
+}
+function buildNumGrid(containerId, checked){
+  const el = document.getElementById(containerId);
+  el.innerHTML = db.numTable.map(row=>{
+    const isChecked = checked.includes(row.num);
+    return `<label class="num-cb${isChecked?' checked':''}" onclick="toggleNumCb(this)">
+      <input type="checkbox" value="${row.num}"${isChecked?' checked':''}>
+      <span>${row.num}号</span>
+    </label>`;
+  }).join('');
+}
+function toggleNumCb(el){
+  const cb = el.querySelector('input');
+  cb.checked = !cb.checked;
+  el.classList.toggle('checked', cb.checked);
+}
+function getCheckedNums(containerId){
+  return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(x=>x.value);
+}
+function cancelAddTube(){
+  closeModal('modal-tube');
+  if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
+  setMapMode('none');
+}
+function saveTube(){
+  const name = document.getElementById('inp-tube-name').value.trim()||'筒場';
+  const fid  = document.getElementById('inp-tube-festival').value;
+  const nums = getCheckedNums('tube-num-grid');
+  if(!fid){alert('大会を選択してください');return;}
+  if(nums.length===0){alert('号数を1つ以上選択してください');return;}
+  db.tubes.push({id:uid(), festivalId:fid, name, lat:pendingTubeLat, lng:pendingTubeLng, nums});
+  saveDB();
+  closeModal('modal-tube');
+  pendingMarker=null;
+  setMapMode('none');
+  renderTubeList();
+  refreshMapMarkers();
+  syncSimSelects();
+}
+function deleteTube(tid){
+  if(!confirm('この筒場を削除しますか？')) return;
+  db.tubes = db.tubes.filter(t=>t.id!==tid);
+  saveDB();
+  renderTubeList();
+  refreshMapMarkers();
+  renderSim();
+}
+function renderTubeList(){
+  const fid = document.getElementById('sel-festival').value;
+  const el = document.getElementById('tube-list');
+  if(!fid){el.innerHTML='';return;}
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  if(tubes.length===0){
+    el.innerHTML='<div class="no-data">筒場なし<br>地図クリックで追加</div>';
+    return;
+  }
+  el.innerHTML = tubes.map(t=>`
+    <div class="tube-item">
+      <span class="ti-name" title="${escH(t.name)}">🔴 ${escH(t.name)}</span>
+      <span class="ti-nums">${t.nums.join('/')}号</span>
+      <span class="ti-del" onclick="deleteTube('${t.id}')">✕</span>
+    </div>`).join('');
+}
+
+// ==================== 対象物 ====================
+function startAddTarget(){
+  setMapMode('target');
+}
+function openAddTargetModal(lat,lng){
+  pendingTargetLat=lat; pendingTargetLng=lng;
+  document.getElementById('inp-target-name').value='';
+  document.getElementById('inp-target-height').value='';
+  openModal('modal-target');
+  setTimeout(()=>document.getElementById('inp-target-name').focus(),100);
+}
+function cancelAddTarget(){
+  closeModal('modal-target');
+  if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
+  setMapMode('none');
+}
+function saveTarget(){
+  const name   = document.getElementById('inp-target-name').value.trim();
+  const height = parseFloat(document.getElementById('inp-target-height').value);
+  if(!name){alert('名前を入力してください');return;}
+  if(!height||height<=0){alert('高さを入力してください');return;}
+  db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height});
+  saveDB();
+  closeModal('modal-target');
+  pendingMarker=null;
+  setMapMode('none');
+  refreshTargetSelects();
+  // 新規登録したものを選択
+  const last = db.targets[db.targets.length-1];
+  document.getElementById('sel-target').value = last.id;
+  onTargetChange();
+}
+function deleteTarget(){
+  const tid = document.getElementById('sel-target').value;
+  if(!tid) return;
+  if(!confirm('この対象物を削除しますか？')) return;
+  db.targets = db.targets.filter(t=>t.id!==tid);
+  saveDB();
+  refreshTargetSelects();
+  onTargetChange();
+}
+function onTargetChange(){
+  const tid = document.getElementById('sel-target').value;
+  document.getElementById('btn-del-target').disabled = !tid;
+  syncSimSelects();
+  refreshMapMarkers();
+}
+function refreshTargetSelects(){
+  const opts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
+  const empty = '<option value="">-- 対象物を選択 --</option>';
+  document.getElementById('sel-target').innerHTML = empty + opts;
+  document.getElementById('sim-sel-target').innerHTML = empty + opts;
+}
+
+// ==================== 地図マーカー更新 ====================
+function refreshMapMarkers(){
+  // 既存マーカー削除
+  tubeMarkers.forEach(m=>map.removeLayer(m));
+  tubeMarkers=[];
+  if(targetMarker){map.removeLayer(targetMarker);targetMarker=null;}
+
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
+
+  // 選択中大会の筒場
+  if(fid){
+    db.tubes.filter(t=>t.festivalId===fid).forEach(t=>{
+      const m = L.circleMarker([t.lat,t.lng],{
+        radius:8,color:'#e8874a',fillColor:'#e8874a',fillOpacity:.8,weight:2
+      }).addTo(map).bindTooltip(`🔴 ${t.name}<br>${t.nums.join('/')}号`,{direction:'top'});
+      tubeMarkers.push(m);
+    });
+  }
+
+  // 選択中対象物
+  if(tid){
+    const tg = db.targets.find(x=>x.id===tid);
+    if(tg){
+      targetMarker = L.circleMarker([tg.lat,tg.lng],{
+        radius:8,color:'#7eb8e8',fillColor:'#7eb8e8',fillOpacity:.8,weight:2
+      }).addTo(map).bindTooltip(`🏢 ${tg.name}<br>${tg.height}m`,{direction:'top'});
+    }
+  }
+
+  // 撮影推奨ラインは最初の筒場と対象物で描画
+  drawShootingLine(fid, tid);
+}
+
+let shootingLine=null;
+function drawShootingLine(fid, tid){
+  if(shootingLine){map.removeLayer(shootingLine);shootingLine=null;}
+  if(!fid||!tid) return;
+  const tg = db.targets.find(x=>x.id===tid);
+  if(!tg) return;
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  if(tubes.length===0) return;
+  // 各筒場と対象物を結ぶライン＋延長線
+  tubes.forEach(tube=>{
+    const dLat = tg.lat - tube.lat;
+    const dLng = tg.lng - tube.lng;
+    // 対象物の先へ2倍延長
+    const extLat = tg.lat + dLat * 2;
+    const extLng = tg.lng + dLng * 2;
+    L.polyline([[tube.lat,tube.lng],[extLat,extLng]],{
+      color:'rgba(232,135,74,0.4)',weight:1,dashArray:'4,4'
+    }).addTo(map);
+  });
+}
+
+// ==================== シミュレーター同期 ====================
+function syncSimSelects(){
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
+  if(fid) document.getElementById('sim-sel-festival').value=fid;
+  if(tid) document.getElementById('sim-sel-target').value=tid;
+  renderSim();
+}
+function onSimFestivalChange(){
+  renderSim();
+}
+
+// ==================== スライダー ====================
+function onSlider(){
+  document.getElementById('lbl-dist').textContent  = document.getElementById('sl-dist').value+'m';
+  document.getElementById('lbl-az').textContent    = document.getElementById('sl-az').value+'°';
+  document.getElementById('lbl-el').textContent    = document.getElementById('sl-el').value+'°';
+  document.getElementById('lbl-focal').textContent = document.getElementById('sl-focal').value+'mm';
+  renderSim();
+}
+
+// ==================== シミュレーション描画 ====================
+const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
+
+function renderSim(){
+  const canvas = document.getElementById('sim-canvas');
+  const wrap   = document.getElementById('cv-wrap');
+  const W = wrap.clientWidth||400;
+  const H = wrap.clientHeight||200;
+  canvas.width=W; canvas.height=H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#060810';
+  ctx.fillRect(0,0,W,H);
+
+  const fid   = document.getElementById('sim-sel-festival').value;
+  const tid   = document.getElementById('sim-sel-target').value;
+  if(!fid||!tid){
+    ctx.fillStyle='#7a82a0';
+    ctx.font='11px Space Mono,monospace';
+    ctx.textAlign='center';
+    ctx.fillText('大会と対象物を選択してください',W/2,H/2);
+    document.getElementById('sim-info').textContent='';
+    return;
+  }
+
+  const tg    = db.targets.find(x=>x.id===tid);
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  if(!tg||tubes.length===0){
+    ctx.fillStyle='#7a82a0';
+    ctx.font='11px Space Mono,monospace';
+    ctx.textAlign='center';
+    ctx.fillText('筒場または対象物が未登録です',W/2,H/2);
+    return;
+  }
+
+  // 視点パラメータ
+  const viewDist  = parseFloat(document.getElementById('sl-dist').value);
+  const azOff     = parseFloat(document.getElementById('sl-az').value) * Math.PI/180;
+  const elevation = parseFloat(document.getElementById('sl-el').value) * Math.PI/180;
+  const focal     = parseFloat(document.getElementById('sl-focal').value);
+
+  // センサーサイズ（フルサイズ35mm換算）
+  const sensorW=36, sensorH=24; // mm
+  // 画角
+  const fovH = 2*Math.atan(sensorW/(2*focal));
+  const fovV = 2*Math.atan(sensorH/(2*focal));
+
+  // 視点の基準：全筒場の重心と対象物の中点から"viewDist"離れた地点
+  // 視点は筒場群の重心↔対象物を結ぶ線の延長上
+  const cLat = tubes.reduce((s,t)=>s+t.lat,0)/tubes.length;
+  const cLng = tubes.reduce((s,t)=>s+t.lng,0)/tubes.length;
+  // 対象物から筒場重心への方向
+  const dLat = cLat - tg.lat;
+  const dLng = cLng - tg.lng;
+  const dLen = Math.sqrt(dLat*dLat+dLng*dLng)||1e-9;
+  // 撮影推奨ライン方向の単位ベクトル（対象物の向こう側）
+  const uLat = -dLat/dLen;
+  const uLng = -dLng/dLen;
+  // 1度≒111km
+  const mPerDeg = 111000;
+  // viewDistをdeg換算（簡易）
+  const distDeg = viewDist/mPerDeg;
+  const viewLat = tg.lat + uLat*distDeg;
+  const viewLng = tg.lng + uLng*distDeg;
+
+  // 3D投影関数（簡易透視投影）
+  // 視点→各物体の相対座標(m)をスクリーン座標に変換
+  // X=東西, Z=南北, Y=高さ
+  function toScreen(objLat, objLng, objAlt){
+    const dx = (objLng - viewLng)*mPerDeg*Math.cos(tg.lat*Math.PI/180);
+    const dz = (objLat - viewLat)*mPerDeg;
+    const dy = objAlt; // 高さ（m）
+
+    // 視線方向：撮影ライン方向 + azOff水平回転
+    // 基本方向ベクトル（筒場群重心→対象物）
+    const baseAz = Math.atan2(
+      (tg.lng-viewLng)*Math.cos(tg.lat*Math.PI/180),
+      tg.lat-viewLat
+    );
+    const az = baseAz + azOff;
+    const el = elevation;
+
+    // カメラ座標系に変換
+    const cosAz=Math.cos(az), sinAz=Math.sin(az);
+    const cosEl=Math.cos(el), sinEl=Math.sin(el);
+    // カメラ前方
+    const cx =  sinAz*cosEl;
+    const cy =  sinEl;
+    const cz =  cosAz*cosEl;
+    // カメラ右方向
+    const rx = cosAz;
+    const ry = 0;
+    const rz = -sinAz;
+    // カメラ上方向（外積）
+    const ux = cz*ry-cy*rz;
+    const uy = cx*rz-cz*rx;
+    const uz = cy*rx-cx*ry;
+
+    const depth = dx*cx + dy*cy + dz*cz;
+    if(depth<=0) return null;
+    const right = dx*rx + dy*ry + dz*rz;
+    const up    = dx*ux + dy*uy + dz*uz;
+
+    // 正規化（画角基準）
+    const normX = right/depth * (focal/(sensorW/2));
+    const normY = up/depth    * (focal/(sensorH/2));
+
+    return {
+      sx: W/2 + normX*(W/2),
+      sy: H/2 - normY*(H/2),
+      depth
+    };
+  }
+
+  // 地平線
+  const horizon = toScreen(tg.lat+0.01, tg.lng, 0);
+  const hY = horizon ? Math.min(Math.max(horizon.sy, H*0.3), H*0.8) : H*0.65;
+
+  // 空グラデーション
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#060810');
+  grad.addColorStop(1,'#0d1020');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  // 地面
+  ctx.fillStyle='#0a0e1a';
+  ctx.fillRect(0,hY,W,H-hY);
+  ctx.strokeStyle='rgba(37,42,64,0.6)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,hY);ctx.lineTo(W,hY);ctx.stroke();
+
+  // 対象物（矩形シルエット）
+  const tgBase = toScreen(tg.lat, tg.lng, 0);
+  const tgTop  = toScreen(tg.lat, tg.lng, tg.height);
+  if(tgBase&&tgTop){
+    const bw = Math.max(4, (tgBase.sx-tgTop.sx)*0.5+8); // 幅の簡易推定
+    const bx = tgTop.sx - bw/2;
+    const bh = tgBase.sy - tgTop.sy;
+    if(bh>0){
+      ctx.fillStyle='rgba(126,184,232,0.25)';
+      ctx.strokeStyle='rgba(126,184,232,0.6)';
+      ctx.lineWidth=1.5;
+      ctx.fillRect(bx,tgTop.sy,bw,bh);
+      ctx.strokeRect(bx,tgTop.sy,bw,bh);
+      ctx.fillStyle='rgba(126,184,232,0.7)';
+      ctx.font='8px Space Mono,monospace';
+      ctx.textAlign='center';
+      ctx.fillText(`${tg.name} ${tg.height}m`,tgTop.sx,tgTop.sy-4);
+    }
+  }
+
+  // 各筒場の各号数の花火
+  tubes.forEach((tube,ti)=>{
+    const color = CV_COLORS[ti % CV_COLORS.length];
+    tube.nums.forEach((numStr,ni)=>{
+      const row = db.numTable.find(r=>r.num===numStr);
+      if(!row) return;
+      const fw = toScreen(tube.lat, tube.lng, row.height);
+      if(!fw) return;
+
+      const radiusM = row.dia/2;
+      // 開花半径をスクリーン上のピクセルに換算（奥行きベース）
+      const depth = fw.depth;
+      const radiusPx = Math.max(3, (radiusM/depth) * focal/(sensorW/2) * (W/2));
+
+      // 放射状花火描画
+      const rays = 16;
+      const innerR = radiusPx * 0.15;
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.85 - ni*0.1;
+      for(let i=0;i<rays;i++){
+        const angle = (i/rays)*Math.PI*2;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(fw.sx + Math.cos(angle)*innerR, fw.sy + Math.sin(angle)*innerR);
+        ctx.lineTo(fw.sx + Math.cos(angle)*radiusPx, fw.sy + Math.sin(angle)*radiusPx);
+        ctx.stroke();
+        // 枝
+        const midX = fw.sx + Math.cos(angle)*radiusPx*0.6;
+        const midY = fw.sy + Math.sin(angle)*radiusPx*0.6;
+        const brA1 = angle + 0.3;
+        const brA2 = angle - 0.3;
+        ctx.lineWidth=0.7;
+        ctx.beginPath();
+        ctx.moveTo(midX,midY);
+        ctx.lineTo(midX+Math.cos(brA1)*radiusPx*0.3, midY+Math.sin(brA1)*radiusPx*0.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(midX,midY);
+        ctx.lineTo(midX+Math.cos(brA2)*radiusPx*0.3, midY+Math.sin(brA2)*radiusPx*0.3);
+        ctx.stroke();
+      }
+      // 外円（開花径の輪郭）
+      ctx.globalAlpha=0.2;
+      ctx.strokeStyle=color;
+      ctx.lineWidth=0.7;
+      ctx.setLineDash([2,3]);
+      ctx.beginPath();ctx.arc(fw.sx,fw.sy,radiusPx,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha=1;
+
+      // ラベル
+      ctx.fillStyle=color;
+      ctx.globalAlpha=0.85;
+      ctx.font='8px Space Mono,monospace';
+      ctx.textAlign='left';
+      ctx.fillText(`${tube.name} ${numStr}号`,fw.sx+radiusPx+3,fw.sy-2);
+      ctx.globalAlpha=1;
+
+      // 筒場から花火まで点線（揚げ軌跡）
+      const tubeBase = toScreen(tube.lat, tube.lng, 0);
+      if(tubeBase){
+        ctx.strokeStyle=color;
+        ctx.globalAlpha=0.15;
+        ctx.lineWidth=0.8;
+        ctx.setLineDash([2,4]);
+        ctx.beginPath();ctx.moveTo(tubeBase.sx,tubeBase.sy);ctx.lineTo(fw.sx,fw.sy);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha=1;
+        // 筒場マーカー
+        ctx.fillStyle=color;
+        ctx.globalAlpha=0.6;
+        ctx.beginPath();ctx.arc(tubeBase.sx,tubeBase.sy,3,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;
+      }
+    });
+  });
+
+  // 情報テキスト
+  const fName = (db.festivals.find(f=>f.id===fid)||{}).name||'';
+  document.getElementById('sim-info').textContent =
+    `視点距離:${viewDist}m  方位:${document.getElementById('sl-az').value}°  仰角:${document.getElementById('sl-el').value}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
+}
+
+// ==================== 設定モーダル ====================
+function openSettings(){
+  buildNumTableModal();
+  openModal('modal-settings');
+}
+function buildNumTableModal(){
+  const tbody = document.getElementById('num-table-body');
+  tbody.innerHTML = db.numTable.map((row,i)=>`
+    <tr>
+      <td>${row.num}号</td>
+      <td><input type="number" id="nt-h-${i}" value="${row.height}" min="1" max="2000"></td>
+      <td><input type="number" id="nt-d-${i}" value="${row.dia}" min="1" max="2000"></td>
+    </tr>`).join('');
+}
+function saveNumTable(){
+  db.numTable.forEach((row,i)=>{
+    const h = parseFloat(document.getElementById(`nt-h-${i}`).value);
+    const d = parseFloat(document.getElementById(`nt-d-${i}`).value);
+    if(h>0) row.height=h;
+    if(d>0) row.dia=d;
+  });
+  saveDB();
+  closeModal('modal-settings');
+  renderSim();
+}
+function resetNumTable(){
+  if(!confirm('号数テーブルをデフォルトに戻しますか？')) return;
+  db.numTable = JSON.parse(JSON.stringify(DEFAULT_NUM_TABLE));
+  saveDB();
+  buildNumTableModal();
+}
+
+// ==================== モーダル共通 ====================
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+// オーバーレイクリックで閉じる
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el) closeModal(el.id);});
+});
+
+// ==================== スマホパネル ====================
+function toggleMobPanel(){
+  const pnl = document.getElementById('pnl');
+  const close = document.getElementById('pnl-close');
+  const isOpen = pnl.classList.contains('open');
+  pnl.classList.toggle('open',!isOpen);
+  close.style.display = !isOpen?'block':'none';
+}
+function closeMobPanel(){
+  document.getElementById('pnl').classList.remove('open');
+}
+
+// ==================== ユーティリティ ====================
+function escH(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ==================== リサイズ ====================
+function onResize(){
+  if(map) map.invalidateSize();
+  renderSim();
+}
+window.addEventListener('resize', onResize);
+
+// ==================== 初期化 ====================
+function init(){
+  loadDB();
+  initMap();
+  refreshFestivalSelects();
+  refreshTargetSelects();
+  renderTubeList();
+  onSlider();
+  renderSim();
+  // スマホ判定
+  if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+    document.getElementById('pnl-close').style.display='block';
+    document.getElementById('mob-bar').style.display='flex';
+  }
+}
+init();
+</script>
+</body>
+</html>
