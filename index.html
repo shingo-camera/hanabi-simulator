@@ -188,6 +188,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 /* スマホ対応 */
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
+  #map-mode{gap:3px;white-space:nowrap;}
+  .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
   :root{--hdr:0px;}
   #hdr{display:none;}
@@ -282,7 +284,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         </select>
       </div>
       <div class="row2" style="margin-bottom:6px;">
-        <button class="pb sm pri" onclick="startAddTube()">＋ 地図で追加</button>
+  
         <button class="pb sm" id="btn-edit-tube" onclick="openEditTube()" disabled>✎ 編集</button>
       </div>
     </div>
@@ -296,13 +298,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </select>
     </div>
     <div class="row2" style="margin-bottom:6px;">
-      <button class="pb sm pri" onclick="startAddTarget()">＋ 地図で追加</button>
+
       <button class="pb sm" id="btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
     </div>
-
-    <!-- 花火基本設定 -->
-    <div class="sec" style="margin-top:10px;">🎆 花火基本設定</div>
-    <button class="pb sm" onclick="openSettings()" style="margin-bottom:6px;">⚙ 号数テーブルを編集</button>
 
     <!-- プレビュー操作 -->
     <div class="sec" style="margin-top:10px;">◎ プレビュー操作</div>
@@ -454,9 +452,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
           <option value="">-- 筒場を選択 --</option>
         </select>
       </div>
-      <div class="row2" style="margin-bottom:10px;">
-        <button class="pb sm pri" onclick="closeMobDrawer();startAddTube()">＋ 地図で追加</button>
-        <button class="pb sm" id="mob-btn-edit-tube" onclick="openEditTube()" disabled>✎ 編集</button>
+      <div style="margin-bottom:10px;">
+        <button class="pb sm" id="mob-btn-edit-tube" onclick="openEditTube()" disabled style="width:100%;">✎ 編集</button>
       </div>
     </div>
 
@@ -469,9 +466,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <option value="">-- 対象物を選択 --</option>
       </select>
     </div>
-    <div class="row2" style="margin-bottom:10px;">
-      <button class="pb sm pri" onclick="closeMobDrawer();startAddTarget()">＋ 地図で追加</button>
-      <button class="pb sm" id="mob-btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
+    <div style="margin-bottom:10px;">
+      <button class="pb sm" id="mob-btn-edit-target" onclick="openEditTarget()" disabled style="width:100%;">✎ 編集</button>
     </div>
 
     <!-- 視点設定 -->
@@ -521,6 +517,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     </div>
     <div class="modal-btns">
       <button class="pb" onclick="closeModal('modal-festival')">キャンセル</button>
+      <button class="pb danger" id="btn-delete-festival" style="display:none;" onclick="deleteFestival()">削除</button>
       <button class="pb pri" onclick="saveFestival()">登録</button>
     </div>
   </div>
@@ -905,6 +902,8 @@ function openAddFestival(){
   document.getElementById('inp-festival-name').value='';
   document.getElementById('inp-festival-memo').value='';
   document.getElementById('modal-festival').querySelector('h2').textContent='🎆 花火大会を登録';
+  const delBtn=document.getElementById('btn-delete-festival');
+  if(delBtn) delBtn.style.display='none';
   openModal('modal-festival');
   setTimeout(()=>document.getElementById('inp-festival-name').focus(),100);
 }
@@ -917,7 +916,26 @@ function openEditFestival(){
   document.getElementById('inp-festival-name').value=f.name;
   document.getElementById('inp-festival-memo').value=f.memo||'';
   document.getElementById('modal-festival').querySelector('h2').textContent='🎆 大会を編集';
+  // 削除ボタン：配下筒場が0件の場合のみ有効
+  const delBtn = document.getElementById('btn-delete-festival');
+  if(delBtn){
+    const hasTubes = db.tubes.some(t=>t.festivalId===fid);
+    delBtn.style.display='inline-block';
+    delBtn.disabled = hasTubes;
+    delBtn.title = hasTubes ? '配下の筒場をすべて削除してから削除できます' : '';
+  }
   openModal('modal-festival');
+}
+function deleteFestival(){
+  if(!editingFestivalId) return;
+  const hasTubes = db.tubes.some(t=>t.festivalId===editingFestivalId);
+  if(hasTubes){ alert('配下の筒場をすべて削除してから削除できます'); return; }
+  if(!confirm('この花火大会を削除しますか？')) return;
+  db.festivals = db.festivals.filter(f=>f.id!==editingFestivalId);
+  saveDB();
+  closeModal('modal-festival');
+  editingFestivalId=null;
+  refreshFestivalSelects();
 }
 function saveFestival(){
   const name = document.getElementById('inp-festival-name').value.trim();
@@ -1426,6 +1444,43 @@ function resetSlider(sliderId, lblId, defaultLabel){
   drawFovLines();
 }
 
+// gCamAlpha・gFovVを計算してセット（renderSimが呼ばれない断面図タブ用）
+function calcCamParams(){
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
+  if(!fid||!tid){ gCamAlpha=null; gFovV=null; return; }
+  const tg    = db.targets.find(x=>x.id===tid);
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  if(!tg||tubes.length===0){ gCamAlpha=null; gFovV=null; return; }
+
+  const isMob  = detectMobile();
+  const focal  = isMob?getMobFocal():(parseFloat(document.getElementById('sl-focal').value)||50);
+  const elOff  = isMob?getMobEl():(parseFloat(document.getElementById('sl-el').value)||0);
+  const r      = Math.PI/180;
+
+  const fvV = compMode==='land'?2*Math.atan(24/(2*focal))/r:2*Math.atan(36/(2*focal))/r;
+
+  const selTubeId = document.getElementById('sel-tube')?document.getElementById('sel-tube').value:'';
+  const selTube   = (selTubeId&&tubes.find(t=>t.id===selTubeId))||tubes[0];
+
+  let simLat, simLng, sElev;
+  if(viewManual && viewLat!==null){
+    simLat=viewLat; simLng=viewLng;
+    sElev=(viewElev||0)+tripodH/100+elevOffset;
+  } else {
+    const az2tube=brng(tg.lat,tg.lng,selTube.lat,selTube.lng);
+    const deg1km=1000/111000;
+    simLat=tg.lat+Math.cos(az2tube*r)*deg1km;
+    simLng=tg.lng+Math.sin(az2tube*r)*deg1km/Math.cos(tg.lat*r);
+    sElev=tripodH/100+elevOffset;
+  }
+
+  const dKm  = hav(simLat,simLng,tg.lat,tg.lng);
+  const vaTop = elAng(dKm, sElev, tg.elev||0, tg.height);
+  gCamAlpha = vaTop + elOff;
+  gFovV     = fvV;
+}
+
 function onSlider(){
   const az    = document.getElementById('sl-az').value;
   const el    = document.getElementById('sl-el').value;
@@ -1433,6 +1488,7 @@ function onSlider(){
   document.getElementById('lbl-az').textContent    = az+'°';
   document.getElementById('lbl-el').textContent    = (parseFloat(el)>0?'+':'')+el+'°';
   document.getElementById('lbl-focal').textContent = focal+'mm';
+  if(currentTab==='diag') calcCamParams();
   layout();
   drawFovLines();
 }
@@ -2022,6 +2078,7 @@ function onMobSlider(){
   if(slAz)    slAz.value    = az;
   if(slEl)    slEl.value    = el;
   if(slFocal) slFocal.value = focal;
+  if(currentTab==='diag') calcCamParams();
   layout();
   drawFovLines();
 }
