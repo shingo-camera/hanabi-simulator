@@ -188,8 +188,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 /* スマホ対応 */
 /* ━━ 数字キーパッド（三脚・標高オフセット） ━━ */
 .hk-overlay{display:none;position:fixed;inset:0;z-index:9820;
-  background:rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;}
-.hk-overlay.open{display:block;}
+  background:rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;pointer-events:none;}
+.hk-overlay.open{display:block;pointer-events:auto;}
 .hk-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-52%);
   background:var(--sur);border:1px solid var(--bd);border-radius:10px;
   padding:14px 16px;z-index:9830;display:flex;flex-direction:column;align-items:center;
@@ -1633,7 +1633,7 @@ function focalPadInput(k){
     }
     closeFocalPad(); return;
   } else {
-    if(buf.focal.length>=3) return;
+    if(buf.focal.length>=4) return;
     buf.focal+=k;
   }
   _hkFocalUpdateDisp();
@@ -2934,14 +2934,19 @@ function init(){
 
   // overflow/scroll要素に直接登録（passive強制を上書き）
   // mob-drawer-panelはスクロール・スワイプを許可するため除外
+  // touchmove: 全要素でピンチブロック
   ['wrap','right','sim-panel','sim-body','cv-wrap','diag-wrap',
    'mob-sliders','pnl','hdr'
   ].forEach(id=>{
     const el=document.getElementById(id);
-    if(el){
-      el.addEventListener('touchmove',blockPinch,pinchOpt);
-      el.addEventListener('touchstart',blockPinch,pinchOpt);
-    }
+    if(el) el.addEventListener('touchmove',blockPinch,pinchOpt);
+  });
+  // touchstart: mob-slidersは除外（ボタンタップを妨げないため）
+  ['wrap','right','sim-panel','sim-body','cv-wrap','diag-wrap',
+   'pnl','hdr'
+  ].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('touchstart',blockPinch,pinchOpt);
   });
   document.body.addEventListener('touchmove',blockPinch,pinchOpt);
 
