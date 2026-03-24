@@ -186,11 +186,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .leaflet-popup-tip{background:var(--bd)!important;}
 
 /* スマホ対応 */
+/* ━━ 数字キーパッド（三脚・標高オフセット） ━━ */
+.hk-overlay{display:none;position:fixed;inset:0;z-index:9820;
+  background:rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;}
+.hk-overlay.open{display:block;}
+.hk-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-52%);
+  background:var(--sur);border:1px solid var(--bd);border-radius:10px;
+  padding:14px 16px;z-index:9830;display:flex;flex-direction:column;align-items:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.7);width:200px;}
+.hk-btn{height:44px;display:flex;align-items:center;justify-content:center;
+  background:var(--sur2);border:1px solid var(--bd);border-radius:6px;
+  font-family:'Space Mono',monospace;font-size:18px;font-weight:700;
+  color:var(--tx);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.hk-btn:active{background:var(--bd);}
+.hk-del{color:var(--sub);font-size:20px;}
+.hk-ok{background:var(--ac);color:var(--bg);border-color:var(--ac);}
+.hk-ok:active{filter:brightness(1.2);}
+.hk-sign{background:var(--sur2);border:1px solid var(--ac);color:var(--ac);}
+.hk-sign:active{background:var(--bd);}
+
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
   #map-mode{gap:3px;white-space:nowrap;}
   .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
+  .mob-tbtn{flex-shrink:0;min-width:36px;height:28px;display:flex;align-items:center;
+    justify-content:center;background:var(--sur2);border:1px solid var(--bd);
+    border-radius:4px;font-family:'Space Mono',monospace;font-size:10px;color:var(--sub);
+    cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .mob-tbtn:active{border-color:var(--ac);color:var(--ac);}
   :root{--hdr:0px;}
   #hdr{display:none;}
   #wrap{top:0;bottom:0;flex-direction:column;}
@@ -230,9 +254,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 /* ドロワー */
 #mob-drawer{display:none;position:fixed;inset:0;z-index:2000;}
 #mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);}
-#mob-drawer-panel{position:absolute;bottom:0;left:0;right:0;
+#mob-drawer-panel{
+  position:absolute;bottom:0;left:0;right:0;
+  height:80vh;
   background:var(--sur);border-radius:16px 16px 0 0;
-  max-height:85vh;overflow-y:auto;padding:16px;}
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);}
+#mob-drawer.open{display:block;}
+#mob-drawer.open #mob-drawer-panel{transform:translateY(0);}
+#mob-drawer-header{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px 8px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+#mob-drawer-inner{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:12px 14px 80px;}
 #mob-drawer-panel::-webkit-scrollbar{width:3px;}
 #mob-drawer-panel::-webkit-scrollbar-thumb{background:var(--bd);}
 .mob-drawer-handle{width:36px;height:4px;background:var(--bd);
@@ -342,10 +374,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <div id="mapbox">
       <div id="map"></div>
       <div id="map-mode">
-        <button class="mm-btn active" id="mm-none" onclick="setMapMode('none')">📍 通常</button>
-        <button class="mm-btn" id="mm-tube" onclick="setMapMode('tube')">🔴 筒場追加</button>
-        <button class="mm-btn target" id="mm-target" onclick="setMapMode('target')">🏢 対象物追加</button>
+        <button class="mm-btn" id="mm-tube" onclick="openAddTubeFromPin()">🔴 筒場追加</button>
+        <button class="mm-btn target" id="mm-target" onclick="openAddTargetFromPin()">🏢 対象物追加</button>
       </div>
+      <!-- ピン登録ボタン（左側・スケールバー上） -->
+      <div id="pin-btns" style="position:absolute;bottom:30px;left:8px;z-index:1001;display:flex;flex-direction:column;gap:4px;">
+        <button id="btn-pin-add" onclick="openPinAdd()" title="この視点を登録"
+          style="width:32px;height:32px;background:#111320;border:1px solid #3a4060;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:#e8eaf0;border-radius:4px;opacity:0.4;"
+          disabled>📌</button>
+        <button onclick="openPinPanel()" title="登録地点一覧"
+          style="width:32px;height:32px;background:#111320;border:1px solid #3a4060;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:#e8eaf0;border-radius:4px;">🏷️</button>
+      </div>
+
       <div id="map-btns" style="display:none;position:absolute;bottom:8px;right:8px;z-index:1000;flex-direction:column;gap:4px;">
         <a id="map-btn-gmap" href="#" target="_blank"
           style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;
@@ -426,7 +466,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 <div id="mob-drawer" onclick="closeMobDrawerBg(event)">
   <div id="mob-drawer-bg"></div>
   <div id="mob-drawer-panel">
-    <div class="mob-drawer-handle"></div>
+    <div id="mob-drawer-header">
+      <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--ac);">⚙ 設定</span>
+      <div onclick="closeMobDrawer()" style="cursor:pointer;font-size:18px;color:var(--sub);padding:4px 8px;">✕</div>
+    </div>
+    <div id="mob-drawer-inner">
 
     <!-- 花火大会 -->
     <div class="mob-sec">🎆 花火大会</div>
@@ -472,30 +516,41 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
     <!-- 視点設定 -->
     <div class="mob-sec">👁 視点設定</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button id="mob-tripod-btn" onclick="openTripodInput()"
-        style="flex:1;background:var(--sur2);border:1px solid var(--bd);color:var(--tx);
-        border-radius:6px;padding:10px 8px;cursor:pointer;text-align:left;">
-        <div style="font-size:8px;color:var(--sub);margin-bottom:2px;">三脚高さ</div>
-        <div style="font-family:'Space Mono',monospace;font-size:16px;color:var(--ac);">
-          <span id="mob-tripod-disp">150</span><span style="font-size:10px;color:var(--sub);">cm</span>
-        </div>
-      </button>
-      <button id="mob-elev-btn" onclick="openElevOffsetInput()"
-        style="flex:1;background:var(--sur2);border:1px solid var(--bd);color:var(--tx);
-        border-radius:6px;padding:10px 8px;cursor:pointer;text-align:left;">
-        <div style="font-size:8px;color:var(--sub);margin-bottom:2px;">標高オフセット</div>
-        <div style="font-family:'Space Mono',monospace;font-size:16px;color:var(--ac);">
-          <span id="mob-elev-offset-disp">+0.00</span><span style="font-size:10px;color:var(--sub);">m</span>
-        </div>
-      </button>
+
+    <!-- 三脚高さ：現在値タップで直接入力＋増減ボタン列 -->
+    <div style="font-size:8px;color:var(--sub);margin-bottom:3px;">三脚高さ (cm)</div>
+    <div style="display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;">
+      <span id="mob-tripod-disp" onclick="openTripodInput()" title="タップで直接入力"
+        style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--ac);
+        flex-shrink:0;min-width:60px;text-align:center;cursor:pointer;border-bottom:1px dashed var(--ac);">150cm</span>
+      <div class="mob-tbtn" onclick="shiftTripod(-10)">−10</div>
+      <div class="mob-tbtn" onclick="shiftTripod(-5)">−5</div>
+      <div class="mob-tbtn" onclick="shiftTripod(-1)">−1</div>
+      <div class="mob-tbtn" onclick="shiftTripod(1)">+1</div>
+      <div class="mob-tbtn" onclick="shiftTripod(5)">+5</div>
+      <div class="mob-tbtn" onclick="shiftTripod(10)">+10</div>
+    </div>
+
+    <!-- 標高オフセット：現在値タップで直接入力＋増減ボタン列 -->
+    <div style="font-size:8px;color:var(--sub);margin-bottom:3px;">標高オフセット (m)</div>
+    <div style="display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;">
+      <span id="mob-elev-offset-disp" onclick="openElevOffsetInput()" title="タップで直接入力"
+        style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--ac);
+        flex-shrink:0;min-width:60px;text-align:center;cursor:pointer;border-bottom:1px dashed var(--ac);">+0m</span>
+      <div class="mob-tbtn" onclick="shiftElevOffset(-5)">−5</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(-1)">−1</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(-0.5)">−0.5</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(0.5)">+0.5</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(1)">+1</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(5)">+5</div>
     </div>
 
     <!-- 花火基本設定 -->
     <div class="mob-sec">⚙ 花火基本設定</div>
     <button class="pb sm" style="width:100%;margin-bottom:16px;" onclick="openSettings()">号数テーブルを編集（高さ・開花径）</button>
-  </div>
-</div>
+    </div><!-- mob-drawer-inner -->
+  </div><!-- mob-drawer-panel -->
+</div><!-- mob-drawer -->
 
 <!-- スマホ横向きオーバーレイ（現行ツールと同方式） -->
 <div id="landscape-overlay">
@@ -661,7 +716,7 @@ function saveDB(){
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
 // ==================== 地図 ====================
-let map, mapMode='none';
+let map;
 let pendingMarker=null; // 仮マーカー（クリック後・登録前）
 let tubeMarkers=[], targetMarker=null;
 
@@ -764,43 +819,19 @@ function initMap(){
   map.on('click', onMapClick);
 }
 
-function setMapMode(mode){
-  mapMode = mode;
-  ['mm-none','mm-tube','mm-target'].forEach(id=>{
-    document.getElementById(id).classList.remove('active');
-  });
-  document.getElementById('mm-'+mode).classList.add('active');
-  map.getContainer().style.cursor = mode==='none'?'':'crosshair';
-}
-
 function onMapClick(e){
   const {lat,lng} = e.latlng;
-
-  if(mapMode==='none'){
-    // 通常モード: クリック地点を視点として設定しシミュレーション起動
-    viewLat = lat;
-    viewLng = lng;
-    viewManual = true;
-    onViewPick();
-    return;
-  }
-
-  // 仮マーカーを置く
-  if(pendingMarker) map.removeLayer(pendingMarker);
-  const color = mapMode==='tube'?'#e8874a':'#7eb8e8';
-  pendingMarker = L.circleMarker([lat,lng],{
-    radius:7,color,fillColor:color,fillOpacity:.7,weight:2
-  }).addTo(map);
-
-  if(mapMode==='tube'){
-    openAddTubeModal(lat,lng);
-  } else if(mapMode==='target'){
-    openAddTargetModal(lat,lng);
-  }
+  viewLat = lat;
+  viewLng = lng;
+  viewManual = true;
+  onViewPick();
 }
 
 // 視点確定後の処理（標高取得・マーカー更新・シミュレーション起動）
 async function onViewPick(){
+  // 📌ボタンを有効化
+  const pinBtn=document.getElementById('btn-pin-add');
+  if(pinBtn){ pinBtn.disabled=false; pinBtn.style.opacity='1'; }
   if(viewLat===null||viewLng===null) return;
 
   // 既存マーカー削除
@@ -989,6 +1020,21 @@ function refreshFestivalSelects(){
 // ==================== 筒場 ====================
 function startAddTube(){
   setMapMode('tube');
+}
+// 最後の視点（=最後のクリック地点）を使って筒場/対象物を追加
+function openAddTubeFromPin(){
+  if(viewLat===null||viewLng===null){
+    alert('地図をタップして地点を選択してからボタンを押してください');
+    return;
+  }
+  openAddTubeModal(viewLat, viewLng);
+}
+function openAddTargetFromPin(){
+  if(viewLat===null||viewLng===null){
+    alert('地図をタップして地点を選択してからボタンを押してください');
+    return;
+  }
+  openAddTargetModal(viewLat, viewLng);
 }
 async function openAddTubeModal(lat,lng){
   editingTubeId = null;
@@ -1395,6 +1441,77 @@ function syncSimSelects(){
 
 // ==================== スライダー ====================
 // ==================== 三脚高さ・標高オフセット ====================
+// ━━ 数字キーパッド（三脚・標高オフセット） ━━
+let _hkBuf = {tripod:'', elev:''};
+
+function openTripodPad(){
+  _hkBuf.tripod = String(tripodH);
+  _hkUpdateDisp('tripod');
+  document.getElementById('tripod-pad-overlay').classList.add('open');
+}
+function closeTripodPad(){
+  document.getElementById('tripod-pad-overlay').classList.remove('open');
+  _hkBuf.tripod='';
+}
+function openElevPad(){
+  _hkBuf.elev = String(Math.abs(elevOffset));
+  _hkElevSign = elevOffset < 0 ? -1 : 1;
+  _hkUpdateDisp('elev');
+  document.getElementById('elev-pad-overlay').classList.add('open');
+}
+function closeElevPad(){
+  document.getElementById('elev-pad-overlay').classList.remove('open');
+  _hkBuf.elev='';
+}
+let _hkElevSign = 1;
+
+function hkInput(type, k){
+  const buf = _hkBuf;
+  if(type==='tripod'){
+    if(k==='DEL'){ buf.tripod=buf.tripod.slice(0,-1); }
+    else if(k==='OK'){
+      const n=parseInt(buf.tripod,10);
+      if(isFinite(n)&&n>=0&&n<=500){ tripodH=n; updateTripodDisp(); layout(); }
+      closeTripodPad(); return;
+    } else {
+      if(buf.tripod.length>=3) return;
+      buf.tripod+=k;
+    }
+    _hkUpdateDisp('tripod');
+  } else {
+    if(k==='DEL'){ buf.elev=buf.elev.slice(0,-1); }
+    else if(k==='SIGN'){ _hkElevSign*=-1; }
+    else if(k==='RESET'){ buf.elev='0'; _hkElevSign=1; }
+    else if(k==='OK'){
+      const n=parseFloat(buf.elev)||0;
+      elevOffset=parseFloat((n*_hkElevSign).toFixed(2));
+      updateElevOffsetDisp(); layout();
+      closeElevPad(); return;
+    } else {
+      if(buf.elev.length>=5) return;
+      // 小数点は1つのみ
+      if(k==='.') { if(buf.elev.includes('.')) return; }
+      buf.elev+=k;
+    }
+    _hkUpdateDisp('elev');
+  }
+}
+function _hkUpdateDisp(type){
+  if(type==='tripod'){
+    const el=document.getElementById('tripod-pad-disp');
+    if(!el) return;
+    const n=parseInt(_hkBuf.tripod,10);
+    const valid=_hkBuf.tripod===''||(isFinite(n)&&n>=0&&n<=500);
+    el.textContent=_hkBuf.tripod===''?'—':_hkBuf.tripod+'cm';
+    el.style.color=valid?'var(--tx)':'#ff6655';
+  } else {
+    const el=document.getElementById('elev-pad-disp');
+    if(!el) return;
+    const sign=_hkElevSign<0?'-':'+';
+    el.textContent=_hkBuf.elev===''?'—':sign+_hkBuf.elev+'m';
+  }
+}
+
 function shiftTripod(v, reset=false){
   tripodH = reset ? 150 : Math.max(0, Math.min(500, tripodH+v));
   updateTripodDisp();
@@ -1402,17 +1519,9 @@ function shiftTripod(v, reset=false){
 }
 function updateTripodDisp(){
   const el = document.getElementById('mob-tripod-disp');
-  if(el) el.textContent = tripodH;
+  if(el) el.textContent = tripodH+'cm';
 }
-function openTripodInput(){
-  const v = prompt('三脚高さ (cm) を入力してください', tripodH);
-  if(v===null) return;
-  const n = parseInt(v);
-  if(isNaN(n)||n<0||n>500){ alert('0〜500cmで入力してください'); return; }
-  tripodH = n;
-  updateTripodDisp();
-  layout();
-}
+function openTripodInput(){ openTripodPad(); }
 
 function shiftElevOffset(v, reset=false){
   elevOffset = reset ? 0 : parseFloat((elevOffset+v).toFixed(2));
@@ -1423,17 +1532,9 @@ function updateElevOffsetDisp(){
   const el = document.getElementById('mob-elev-offset-disp');
   if(!el) return;
   const sign = elevOffset>=0 ? '+' : '';
-  el.textContent = sign + elevOffset.toFixed(2);
+  el.textContent = sign + elevOffset.toFixed(1) + 'm';
 }
-function openElevOffsetInput(){
-  const v = prompt('標高オフセット (m) を入力してください\n現在の地点標高に加算されます', elevOffset);
-  if(v===null) return;
-  const n = parseFloat(v);
-  if(isNaN(n)){ alert('数値を入力してください'); return; }
-  elevOffset = parseFloat(n.toFixed(2));
-  updateElevOffsetDisp();
-  layout();
-}
+function openElevOffsetInput(){ openElevPad(); }
 
 function resetSlider(sliderId, lblId, defaultLabel){
   const sl = document.getElementById(sliderId);
@@ -2113,10 +2214,14 @@ function closeMobPanel(){
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
   refreshMobDrawerSelects();
-  document.getElementById('mob-drawer').style.display='block';
+  const d=document.getElementById('mob-drawer');
+  d.style.display='block';
+  requestAnimationFrame(()=>d.classList.add('open'));
 }
 function closeMobDrawer(){
-  document.getElementById('mob-drawer').style.display='none';
+  const d=document.getElementById('mob-drawer');
+  d.classList.remove('open');
+  setTimeout(()=>{ if(!d.classList.contains('open')) d.style.display='none'; },300);
 }
 function closeMobDrawerBg(e){
   if(e.target===document.getElementById('mob-drawer-bg')) closeMobDrawer();
@@ -2282,6 +2387,83 @@ function updateMapBtns(simViewLat, simViewLng, azRad){
   btns.style.display = 'flex';
   document.getElementById('map-btn-gmap').href = mapsUrl;
   document.getElementById('map-btn-sv').href   = svUrl;
+}
+
+// ==================== 登録地点（ピン） ====================
+const PIN_KEY='hanabiPlannerPins_v1';
+function loadPins(){ try{return JSON.parse(localStorage.getItem(PIN_KEY)||'[]');}catch(e){return [];} }
+function savePins(p){ try{localStorage.setItem(PIN_KEY,JSON.stringify(p));}catch(e){} }
+
+function openPinAdd(){
+  if(viewLat===null||viewLng===null) return;
+  const defaultName=`${viewLat.toFixed(4)},${viewLng.toFixed(4)}_E:${(viewElev||0).toFixed(0)}m`;
+  const name=prompt('登録名を入力してください',defaultName);
+  if(name===null) return;
+  const pins=loadPins();
+  if(pins.length>=100){alert('登録地点は最大100件です');return;}
+  pins.push({name:name.trim()||defaultName, lat:viewLat, lng:viewLng, elev:viewElev||0,
+    createdAt:Date.now()});
+  savePins(pins);
+}
+
+function openPinPanel(){
+  renderPinList();
+  document.getElementById('pin-overlay').style.display='block';
+  const p=document.getElementById('pin-popup');
+  p.style.display='flex';
+}
+function closePinPanel(){
+  document.getElementById('pin-overlay').style.display='none';
+  document.getElementById('pin-popup').style.display='none';
+}
+
+function renderPinList(){
+  const list=document.getElementById('pin-list');
+  const pins=loadPins();
+  list.innerHTML='';
+  if(pins.length===0){
+    list.innerHTML='<div style="color:var(--sub);font-size:11px;padding:16px 0;text-align:center;">登録地点はありません</div>';
+    return;
+  }
+  pins.forEach((pin,i)=>{
+
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;';
+    row.title='クリックで視点をセット';
+
+    const num=document.createElement('span');
+    num.style.cssText='width:18px;height:18px;border-radius:50%;background:var(--ac);color:#0a0c14;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:Space Mono,monospace;';
+    num.textContent=i+1;
+    row.appendChild(num);
+
+    const nameSpan=document.createElement('span');
+    nameSpan.style.cssText='flex:1;font-family:"Space Mono",monospace;font-size:10px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameSpan.textContent=pin.name;
+    row.appendChild(nameSpan);
+
+    const meta=document.createElement('span');
+    meta.style.cssText='font-family:"Space Mono",monospace;font-size:8px;color:var(--sub);white-space:nowrap;flex-shrink:0;';
+    meta.textContent=`E:${pin.elev.toFixed(0)}m  ${pin.lat.toFixed(4)},${pin.lng.toFixed(4)}`;
+    row.appendChild(meta);
+
+    const delBtn=document.createElement('span');
+    delBtn.style.cssText='color:var(--sub);cursor:pointer;font-size:14px;flex-shrink:0;padding:0 2px;';
+    delBtn.textContent='✕';
+    delBtn.title='削除';
+    delBtn.onclick=e=>{
+      e.stopPropagation();
+      if(!confirm('削除しますか？')) return;
+      const p=loadPins(); p.splice(i,1); savePins(p); renderPinList();
+    };
+    row.appendChild(delBtn);
+
+    row.addEventListener('click',()=>{
+      viewLat=pin.lat; viewLng=pin.lng; viewElev=pin.elev; viewManual=true;
+      onViewPick();
+      closePinPanel();
+    });
+    list.appendChild(row);
+  });
 }
 
 // ==================== ユーティリティ ====================
@@ -2570,9 +2752,9 @@ function init(){
   },pinchOpt);
 
   // overflow/scroll要素に直接登録（passive強制を上書き）
+  // mob-drawer-panelはスクロール・スワイプを許可するため除外
   ['wrap','right','sim-panel','sim-body','cv-wrap','diag-wrap',
-   'mob-sliders','mob-settings-btn','mob-drawer','mob-drawer-inner',
-   'pnl','hdr'
+   'mob-sliders','mob-settings-btn','pnl','hdr'
   ].forEach(id=>{
     const el=document.getElementById(id);
     if(el){
@@ -2581,8 +2763,87 @@ function init(){
     }
   });
   document.body.addEventListener('touchmove',blockPinch,pinchOpt);
+
+  // ── ドロワーを下スワイプで閉じる ──
+  const drawerPanel=document.getElementById('mob-drawer-panel');
+  if(drawerPanel){
+    let _swipeStartY=null;
+    drawerPanel.addEventListener('touchstart',e=>{
+      // スクロールが一番上の時だけスワイプ閉じを受け付ける
+      _swipeStartY = e.touches[0].clientY;
+    },{passive:true});
+    drawerPanel.addEventListener('touchend',e=>{
+      if(_swipeStartY===null) return;
+      const dy = e.changedTouches[0].clientY - _swipeStartY;
+      _swipeStartY = null;
+      // 下方向に60px以上スワイプ、かつパネルがスクロール最上部
+      if(dy > 60 && drawerPanel.scrollTop <= 0) closeMobDrawer();
+    },{passive:true});
+  }
 }
 init();
 </script>
+<!-- 三脚高さキーパッド -->
+<div id="tripod-pad-overlay" class="hk-overlay" onclick="closeTripodPad()">
+  <div class="hk-popup" onclick="event.stopPropagation()">
+    <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">三脚高さ (cm)</div>
+    <div id="tripod-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
+      <div class="hk-btn" onclick="hkInput('tripod','7')">7</div>
+      <div class="hk-btn" onclick="hkInput('tripod','8')">8</div>
+      <div class="hk-btn" onclick="hkInput('tripod','9')">9</div>
+      <div class="hk-btn" onclick="hkInput('tripod','4')">4</div>
+      <div class="hk-btn" onclick="hkInput('tripod','5')">5</div>
+      <div class="hk-btn" onclick="hkInput('tripod','6')">6</div>
+      <div class="hk-btn" onclick="hkInput('tripod','1')">1</div>
+      <div class="hk-btn" onclick="hkInput('tripod','2')">2</div>
+      <div class="hk-btn" onclick="hkInput('tripod','3')">3</div>
+      <div class="hk-btn hk-del" onclick="hkInput('tripod','DEL')">⌫</div>
+      <div class="hk-btn" onclick="hkInput('tripod','0')">0</div>
+      <div class="hk-btn hk-ok" onclick="hkInput('tripod','OK')">OK</div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">0 〜 500 cm</div>
+  </div>
+</div>
+
+<!-- 標高オフセットキーパッド -->
+<div id="elev-pad-overlay" class="hk-overlay" onclick="closeElevPad()">
+  <div class="hk-popup" onclick="event.stopPropagation()">
+    <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">標高オフセット (m)</div>
+    <div id="elev-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
+      <div class="hk-btn" onclick="hkInput('elev','7')">7</div>
+      <div class="hk-btn" onclick="hkInput('elev','8')">8</div>
+      <div class="hk-btn" onclick="hkInput('elev','9')">9</div>
+      <div class="hk-btn" onclick="hkInput('elev','4')">4</div>
+      <div class="hk-btn" onclick="hkInput('elev','5')">5</div>
+      <div class="hk-btn" onclick="hkInput('elev','6')">6</div>
+      <div class="hk-btn" onclick="hkInput('elev','1')">1</div>
+      <div class="hk-btn" onclick="hkInput('elev','2')">2</div>
+      <div class="hk-btn" onclick="hkInput('elev','3')">3</div>
+      <div class="hk-btn hk-del" onclick="hkInput('elev','DEL')">⌫</div>
+      <div class="hk-btn" onclick="hkInput('elev','0')">0</div>
+      <div class="hk-btn hk-ok" onclick="hkInput('elev','OK')">OK</div>
+    </div>
+    <!-- 符号ボタン -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin-top:6px;">
+      <div class="hk-btn hk-sign" onclick="hkInput('elev','SIGN')" style="font-size:16px;">±</div>
+      <div class="hk-btn" onclick="hkInput('elev','RESET')" style="font-size:13px;color:var(--sub);">RST</div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">マイナスは ± で符号切替</div>
+  </div>
+</div>
+
+<!-- 登録地点オーバーレイ -->
+<div id="pin-overlay" onclick="if(event.target===this)closePinPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10100;"></div>
+<div id="pin-popup" style="display:none;position:fixed;top:5%;left:50%;transform:translateX(-50%);
+  width:min(96vw,480px);max-height:88vh;background:var(--sur);border:1px solid var(--bd);
+  border-radius:8px;z-index:10101;flex-direction:column;overflow:hidden;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--bd);flex-shrink:0;">
+    <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--ac);">🏷️ 登録地点（最大100件）</span>
+    <span onclick="closePinPanel()" style="cursor:pointer;font-size:18px;color:var(--sub);padding:4px 8px;">✕</span>
+  </div>
+  <div id="pin-list" style="overflow-y:auto;flex:1;padding:8px 16px;"></div>
+</div>
 </body>
 </html>
