@@ -325,8 +325,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         </div>
       </div>
       <div class="sl-row">
-        <label>焦点距離 <span id="lbl-focal">200mm</span></label>
-        <input type="range" id="sl-focal" min="24" max="800" value="200" step="1" oninput="onSlider()">
+        <label>焦点距離 <span id="lbl-focal">50mm</span></label>
+        <input type="range" id="sl-focal" min="9" max="600" value="50" step="1" oninput="onSlider()">
       </div>
     </div>
 
@@ -1303,7 +1303,7 @@ function drawFovLines(){
   fovLines=[];
   if(viewLat===null||viewLng===null) return;
 
-  const focal  = parseFloat(document.getElementById('sl-focal').value)||200;
+  const focal  = parseFloat(document.getElementById('sl-focal').value)||50;
   const azOff  = parseFloat(document.getElementById('sl-az').value)||0;
 
   // 水平画角（フルサイズ35mm換算）
@@ -1435,9 +1435,10 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
   if(!canvas) return;
-  // canvasサイズ未設定ならlayoutに任せる
+  // canvasサイズ未設定なら同期でlayout()を呼んでサイズを確定させる
   if(!canvas.width || canvas.width===0){
-    requestAnimationFrame(()=>{ layout(); });
+    layout();
+    // layout()内でrenderSim()が呼ばれるので終了
     return;
   }
   const W = canvas.width;
@@ -1451,10 +1452,8 @@ function renderSim(){
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
-  // 大会・対象・視点の3つが揃っている時のみ描画
-  const hasView = viewManual && viewLat!==null;
-  const selTubeIdEarly = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
-  if(!fid||!tid||!hasView||!selTubeIdEarly){
+  // 大会・対象が選択されていれば描画（視点未設定はデフォルト位置で代替）
+  if(!fid||!tid){
     ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
     document.getElementById('sim-info').textContent='';
     return;
@@ -2296,7 +2295,7 @@ function mobLayout(){
     }
   }
   if(map) map.invalidateSize();
-  requestAnimationFrame(()=>{ if(isCam) renderSim(); else renderDiag(); });
+  if(isCam) renderSim(); else renderDiag();
 }
 
 // ==================== 地図連携ボタン ====================
@@ -2544,10 +2543,8 @@ function layout(){
   }
 
   if(map) map.invalidateSize();
-  // rAFでcanvas描画確定後に再描画
-  requestAnimationFrame(()=>{
-    if(currentTab==='cam') renderSim(); else renderDiag();
-  });
+  // canvas.widthが確定した直後に同期で描画
+  if(currentTab==='cam') renderSim(); else renderDiag();
 }
 
 function onResize(){
@@ -2571,15 +2568,13 @@ function init(){
   refreshTubeSelect();
   onSlider();
   // layoutはDOMが確定してから（requestAnimationFrame）
-  requestAnimationFrame(()=>{
-    updateLandscapeOverlay(); // 初期横向きチェック（現行ツールと同方式）
-    layout();
-    if(detectMobile()){
-      gIsMobile=true;
-      const lbl=document.getElementById('mob-lbl-focal');
-      if(lbl) lbl.textContent='50mm';
-    }
-  });
+  updateLandscapeOverlay();
+  layout();
+  if(detectMobile()){
+    gIsMobile=true;
+    const lbl=document.getElementById('mob-lbl-focal');
+    if(lbl) lbl.textContent='50mm';
+  }
   // スマホ判定
   if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
     document.getElementById('pnl-close').style.display='block';
