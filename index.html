@@ -1434,6 +1434,7 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
+  console.log('[renderSim] canvas.width:', canvas?canvas.width:'no-canvas');
   if(!canvas||!canvas.width||canvas.width===0) return;
   const W = canvas.width;
   const H = canvas.height;
@@ -2458,6 +2459,8 @@ function setCompMode(o){
 function layout(){
   if(detectMobile()){ mobLayout(); return; }
   const simPanel  = document.getElementById('sim-panel');
+  const _dbgCanvas = document.getElementById('sim-canvas');
+  console.log('[layout] called, sim-panel:', simPanel?'ok':'null', 'canvas:', _dbgCanvas?'ok':'null', 'canvas.width:', _dbgCanvas?_dbgCanvas.width:'n/a', 'window:', window.innerWidth+'x'+window.innerHeight);
   const cvWrap    = document.getElementById('cv-wrap');
   const cvClip    = document.getElementById('cv-clip');
   const canvas    = document.getElementById('sim-canvas');
@@ -2530,6 +2533,7 @@ function layout(){
       if(cW > rightW){ cW = rightW; cH = Math.round(cW * 2/3); }
     }
     canvas.width = cW; canvas.height = cH;
+    console.log('[layout] canvas set:', cW, 'x', cH, 'bodyH_land:', bodyH_land, 'pvH_land:', pvH_land, 'tabH:', tabH);
     canvas.style.cssText = `width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
     if(cvClip) cvClip.style.cssText = `width:${cW}px;height:${cH}px;overflow:hidden;flex-shrink:0;flex-grow:0;border:1.5px solid var(--ac);box-sizing:border-box;`;
 
