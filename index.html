@@ -1770,6 +1770,9 @@ function renderSim(){
   if(info) info.textContent=`f:${focal}mm  az:${azOff>0?'+':''}${azOff}°  el:${elOff>0?'+':''}${elOff}°  ${fName}×${tg.name}`;
   const tabInfo=document.getElementById('sim-tab-info');
   if(tabInfo) tabInfo.textContent=`f:${focal}mm  ${fName}×${tg.name}`;
+
+  // ── 地図連携ボタン更新 ──
+  updateMapBtns(simLat, simLng, (tAz+azOff)*r);
 }
 
 
@@ -2427,6 +2430,7 @@ function setCompMode(o){
   const tp=document.getElementById('tab-btn-port');
   if(tl) tl.classList.toggle('on', o==='land');
   if(tp) tp.classList.toggle('on', o==='port');
+  if(currentTab==='diag') calcCamParams();
   layout();
   drawFovLines();
 }
