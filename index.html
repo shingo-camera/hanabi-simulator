@@ -372,6 +372,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
           <button onclick="openFocalPad('pc')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;min-width:38px;"><span id="lbl-focal-btn">50mm</span></button>
         </div>
       </div>
+      <!-- 視点設定 -->
+      <div class="sl-row" style="margin-top:6px;">
+        <label>三脚高さ <span id="pc-tripod-disp" style="color:var(--ac);cursor:pointer;border-bottom:1px dashed var(--ac);" onclick="openTripodInput()" title="クリックで入力">150cm</span></label>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="shiftTripod(-10)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−10</button>
+          <button onclick="shiftTripod(-1)"  style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−1</button>
+          <button onclick="shiftTripod(1)"   style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+1</button>
+          <button onclick="shiftTripod(10)"  style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+10</button>
+          <button onclick="shiftTripod(0,true)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
+        </div>
+      </div>
+      <div class="sl-row">
+        <label>標高オフセット <span id="pc-elev-offset-disp" style="color:var(--ac);cursor:pointer;border-bottom:1px dashed var(--ac);" onclick="openElevOffsetInput()" title="クリックで入力">+0m</span></label>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="shiftElevOffset(-5)"   style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−5</button>
+          <button onclick="shiftElevOffset(-1)"   style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−1</button>
+          <button onclick="shiftElevOffset(1)"    style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+1</button>
+          <button onclick="shiftElevOffset(5)"    style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+5</button>
+          <button onclick="shiftElevOffset(0,true)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
+        </div>
+      </div>
     </div>
 
     <!-- スマホ用閉じるボタン -->
@@ -1538,6 +1559,8 @@ function shiftTripod(v, reset=false){
 function updateTripodDisp(){
   const el = document.getElementById('mob-tripod-disp');
   if(el) el.textContent = tripodH+'cm';
+  const pc = document.getElementById('pc-tripod-disp');
+  if(pc) pc.textContent = tripodH+'cm';
 }
 function openTripodInput(){ openTripodPad(); }
 
@@ -1547,10 +1570,12 @@ function shiftElevOffset(v, reset=false){
   layout();
 }
 function updateElevOffsetDisp(){
-  const el = document.getElementById('mob-elev-offset-disp');
-  if(!el) return;
   const sign = elevOffset>=0 ? '+' : '';
-  el.textContent = sign + elevOffset.toFixed(1) + 'm';
+  const txt = sign + elevOffset.toFixed(1) + 'm';
+  const el = document.getElementById('mob-elev-offset-disp');
+  if(el) el.textContent = txt;
+  const pc = document.getElementById('pc-elev-offset-disp');
+  if(pc) pc.textContent = txt;
 }
 function openElevOffsetInput(){ openElevPad(); }
 
