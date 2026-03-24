@@ -3043,19 +3043,17 @@ function init(){
     e.preventDefault();
   }, pinchOpt);
 
-  // overflow要素に直接登録（touchmoveのみ）
-  ['mob-drawer','mob-drawer-inner','pnl',
-   'sim-panel','cv-wrap','diag-wrap','right','wrap'
+  // overflow要素に直接登録（touchmoveのみ・ムーンプランナーと同じリスト）
+  ['pnl','sim-panel','cv-wrap','diag-wrap','right','wrap'
   ].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.addEventListener('touchmove', blockPinch, pinchOpt);
   });
   document.body.addEventListener('touchmove', blockPinch, pinchOpt);
 
-  // touchstart：2本指のみブロック（ムーンプランナーと同じ別関数）
+  // touchstart：2本指のみブロック
   function blockPinchStart(e){ if(e.touches.length >= 2) e.preventDefault(); }
-  ['mob-drawer','mob-drawer-inner','pnl',
-   'sim-panel','cv-wrap','diag-wrap','right','wrap'
+  ['pnl','sim-panel','cv-wrap','diag-wrap','right','wrap'
   ].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.addEventListener('touchstart', blockPinchStart, pinchOpt);
