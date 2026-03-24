@@ -2063,14 +2063,14 @@ function renderDiag(){
   const yMin = Math.min(...allY); const yMax = Math.max(...allY);
 
   // マージン・フォントサイズをcanvasサイズに応じてスケール
-  const scale = Math.max(0.7, Math.min(1.4, W / 400));
-  const fSm   = Math.round(8  * scale);  // 小ラベル
-  const fMd   = Math.round(9  * scale);  // 通常ラベル
-  const fLg   = Math.round(10 * scale);  // 大ラベル
-  const ML = Math.round(52 * scale);
-  const MR = Math.round(8  * scale);
-  const MT = Math.round(18 * scale);
-  const MB = Math.round(32 * scale);
+  const scale = Math.max(0.8, Math.min(1.2, W / 350));
+  const fSm   = Math.round(10 * scale);  // 小ラベル
+  const fMd   = Math.round(11 * scale);  // 通常ラベル
+  const fLg   = Math.round(12 * scale);  // 大ラベル
+  const ML = Math.round(42 * scale);  // 左：高さ軸ラベル分のみ
+  const MR = Math.round(4  * scale);  // 右：最小限（ラベルはcanvas内で完結）
+  const MT = Math.round(fLg * 2);     // 上：上ラベル分
+  const MB = Math.round(fSm * 4);     // 下：X軸ラベル分
   const PW = W - ML - MR;
   const PH = H - MT - MB;
 
@@ -2122,9 +2122,8 @@ function renderDiag(){
     ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
     // 仰角ラベル
     ctx.fillStyle=color; ctx.font=fSm+'px Space Mono,monospace';
-    ctx.textAlign='left'; ctx.textBaseline='bottom';
-    ctx.fillText(`${row.num}号 ${vaFW.toFixed(1)}°`,
-      toCanvasX(fwX)+3, toCanvasY(fwY)-2);
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText(`${row.num}号 ${vaFW.toFixed(1)}°`, W-2, toCanvasY(fwY)-2);
   });
 
   // ── 仰角ライン（視点→対象頂点） ──
@@ -2205,22 +2204,13 @@ function renderDiag(){
       ctx.stroke();
       ctx.setLineDash([]); ctx.globalAlpha = 1;
 
-      // 花火円の右端＋余白にラベル（canvas右端をはみ出さない）
+      // ラベルをcanvas右端から右揃えで表示
       ctx.fillStyle = item.color;
       ctx.globalAlpha = item.alpha + 0.1;
       ctx.font = fSm+'px Space Mono,monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      const lblX = toCanvasX(xTube) + (item.radPx||4) + 3;
-      const lblMaxX = W - 2;
-      const txtW = ctx.measureText(item.label).width;
-      if(lblX + txtW <= lblMaxX){
-        ctx.fillText(item.label, lblX, cy - 1);
-      } else {
-        // 右端に収まらない場合は右揃えでcanvas内に収める
-        ctx.textAlign = 'right';
-        ctx.fillText(item.label, lblMaxX, cy - 1);
-      }
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.label, W - 2, cy);
       ctx.globalAlpha = 1;
     });
   }
@@ -2276,10 +2266,10 @@ function renderDiag(){
     ctx.fillStyle='rgba(200,230,100,0.85)'; ctx.font=fSm+'px Space Mono,monospace';
     ctx.textAlign='left'; ctx.textBaseline='middle';
     const lblX = toCanvasX(xRight) + 2;
-    if(lblX < W - 2){
-      ctx.fillText(`+${halfFovV.toFixed(1)}°`, lblX, toCanvasY(upperYatRight));
-      ctx.fillText(`-${halfFovV.toFixed(1)}°`, lblX, toCanvasY(lowerYatRight));
-    }
+    // 画角ラベルは常にcanvas右端から右揃えで表示
+    ctx.textAlign='right';
+    ctx.fillText(`+${halfFovV.toFixed(1)}°`, W-2, toCanvasY(upperYatRight));
+    ctx.fillText(`-${halfFovV.toFixed(1)}°`, W-2, toCanvasY(lowerYatRight));
     // 光軸ライン（薄く）
     const axisYatRight = simViewElev + Math.tan(camAlphaDeg * Math.PI/180) * xRight;
     ctx.strokeStyle='rgba(200,230,100,0.3)'; ctx.lineWidth=0.8; ctx.setLineDash([1,3]);
