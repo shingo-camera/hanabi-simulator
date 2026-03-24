@@ -210,20 +210,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 #mob-drawer{display:none;position:fixed;inset:0;z-index:2000;}
 #mob-settings-btn{display:none;padding:4px 8px;background:var(--sur);border-top:1px solid var(--bd);flex-shrink:0;}
 
+#mob-bar{display:none;}
+
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
-  :root{--hdr:0px;--mob-bar:96px;}
+  :root{--hdr:0px;--mob-bar:104px;}
   #hdr{display:none;}
   #pnl{display:none;}
   #wrap{top:0;bottom:var(--mob-bar);}
   #right{flex-direction:column;width:100%;overflow:hidden;}
   #mapbox{flex:1;min-height:0;}
   #sim-panel{flex-shrink:0;height:40vh;}
-  #mob-bar{display:flex;flex-direction:column;gap:2px;
+  #mob-bar{
+    display:flex;flex-direction:column;gap:3px;
     position:fixed;bottom:0;left:0;right:0;
     height:var(--mob-bar);
     background:var(--sur);border-top:1px solid var(--bd);
-    padding:3px 6px;z-index:9000;}
+    padding:4px 6px;z-index:9000;
+  }
   #mob-sliders{display:none!important;}
   #mob-settings-btn{display:none!important;}
   #tab-orient{display:flex!important;}
@@ -281,7 +285,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .mob-sec::after{content:'';flex:1;height:1px;background:var(--bd);}
 
 /* mob-bar削除（不要） */
-#mob-bar{display:none!important;}
 
 /* ノーデータ */
 .no-data{text-align:center;color:var(--sub);font-size:9px;padding:12px 0;line-height:1.8;}
