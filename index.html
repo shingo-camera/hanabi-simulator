@@ -212,24 +212,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
-  #map-mode{gap:3px;white-space:nowrap;}
-  .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
+  :root{--hdr:0px;--mob-bar:96px;}
+  #hdr{display:none;}
+  #pnl{display:none;}
+  #wrap{top:0;bottom:var(--mob-bar);}
+  #right{flex-direction:column;width:100%;overflow:hidden;}
+  #mapbox{flex:1;min-height:0;}
+  #sim-panel{flex-shrink:0;height:40vh;}
+  #mob-bar{display:flex;flex-direction:column;gap:2px;
+    position:fixed;bottom:0;left:0;right:0;
+    height:var(--mob-bar);
+    background:var(--sur);border-top:1px solid var(--bd);
+    padding:3px 6px;z-index:9000;}
+  #mob-sliders{display:none!important;}
+  #mob-settings-btn{display:none!important;}
   #tab-orient{display:flex!important;}
-  #mob-sliders{display:flex!important;}
-  #tab-orient .tab-ob{
-    background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
+  #tab-orient .tab-ob{background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
     border-radius:4px;padding:3px 10px;cursor:pointer;
     font-family:'Space Mono',monospace;font-size:9px;
     -webkit-tap-highlight-color:transparent;}
   #tab-orient .tab-ob.on{border-color:var(--ac);color:var(--ac);background:rgba(232,135,74,0.12);}
-  .mob-tbtn{flex-shrink:0;min-width:36px;height:28px;display:flex;align-items:center;
-    justify-content:center;background:var(--sur2);border:1px solid var(--bd);
-    border-radius:4px;font-family:'Space Mono',monospace;font-size:10px;color:var(--sub);
-    cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .mob-tbtn:active{border-color:var(--ac);color:var(--ac);}
-  /* 3行コンパクト操作部 */
-  #mob-sliders{display:flex;flex-direction:column;gap:2px;padding:3px 6px;
-    background:var(--sur);border-top:1px solid var(--bd);}
   .mob-ctrl-row{display:flex;align-items:center;gap:3px;height:24px;}
   .mob-ctrl-lbl{font-family:'Space Mono',monospace;font-size:8px;color:var(--sub);
     flex-shrink:0;min-width:52px;white-space:nowrap;}
@@ -240,29 +242,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0;
     touch-action:manipulation;}
   .mob-sbtn:active{border-color:var(--ac);color:var(--ac);}
-  .mob-sbtn.on{border-color:var(--ac);color:var(--ac);background:rgba(232,135,74,0.12);}
-  .mob-sbtn-ac{border-color:var(--ac);color:var(--ac);}
   .mob-focal-disp{flex-shrink:0;min-width:44px;height:22px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--ac);
     border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
     color:var(--ac);cursor:pointer;padding:0;touch-action:manipulation;}
-  :root{--hdr:0px;}
-  #hdr{display:none;}
-  #wrap{top:0;bottom:0;flex-direction:column;}
-  #pnl{display:none;}
-  #right{flex-direction:column;width:100%;overflow:hidden;}
-
-  /* 地図（上）・プレビュー（下） */
-  #mapbox{flex:1;min-height:0;}
-  #sim-panel{flex-shrink:0;height:40vh;}
-
-  /* スマホスライダー */
-  #mob-sliders{display:flex!important;}
-
-  /* スマホ設定ボタン */
-  #mob-settings-btn{display:flex!important;}
-
-  /* ドロワーはJSで制御（初期はdisplay:none） */
 }
 
 /* landscape-overlay: JS制御（現行ツールと同方式・PCブラウザ縮小誤検知防止） */
@@ -474,41 +457,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </div>
     </div>
 
-    <!-- スマホ用操作エリア（3行コンパクト） -->
-    <div id="mob-sliders">
-      <!-- 1行目：左右 -->
-      <div class="mob-ctrl-row">
-        <span class="mob-ctrl-lbl">左右 <span id="mob-lbl-az">0°</span></span>
-        <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" class="mob-sl">
-        <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')">↺</button>
-        <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')">−</button>
-        <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')">+</button>
-      </div>
-      <!-- 2行目：上下 -->
-      <div class="mob-ctrl-row">
-        <span class="mob-ctrl-lbl">上下 <span id="mob-lbl-el">0°</span></span>
-        <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" class="mob-sl">
-        <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')">↺</button>
-        <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">−</button>
-        <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+</button>
-      </div>
-      <!-- 3行目：焦点距離 -->
-      <div class="mob-ctrl-row">
-        <button class="mob-focal-disp" onclick="openFocalPad('mob')" id="mob-lbl-focal-btn">50mm</button>
-        <input type="range" id="mob-sl-focal" min="9" max="1200" value="50" step="1" oninput="onMobSlider()" class="mob-sl">
-        <span id="mob-lbl-focal" style="display:none;">50mm</span>
-      </div>
-    </div>
-
-    <!-- スマホ設定ボタン（mob-slidersの外） -->
-    <div id="mob-settings-btn">
-      <button class="pb pri" style="width:100%;padding:8px;font-size:11px;" onclick="openMobDrawer()">
-        ⚙ 設定（花火・筒場・対象・号数テーブル）
-      </button>
-    </div>
-
   </div><!-- #right -->
 </div><!-- #wrap -->
+
+<!-- スマホ用ボトムバー（mob-bar） -->
+<div id="mob-bar">
+  <!-- 1行目：左右 -->
+  <div class="mob-ctrl-row">
+    <span class="mob-ctrl-lbl">左右 <span id="mob-lbl-az">0°</span></span>
+    <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" class="mob-sl">
+    <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')">↺</button>
+    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')">−</button>
+    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')">+</button>
+  </div>
+  <!-- 2行目：上下 -->
+  <div class="mob-ctrl-row">
+    <span class="mob-ctrl-lbl">上下 <span id="mob-lbl-el">0°</span></span>
+    <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" class="mob-sl">
+    <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')">↺</button>
+    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">−</button>
+    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+</button>
+  </div>
+  <!-- 3行目：焦点距離＋設定ボタン -->
+  <div class="mob-ctrl-row">
+    <button class="mob-focal-disp" onclick="openFocalPad('mob')" id="mob-lbl-focal-btn">50mm</button>
+    <input type="range" id="mob-sl-focal" min="9" max="1200" value="50" step="1" oninput="onMobSlider()" class="mob-sl">
+    <span id="mob-lbl-focal" style="display:none;">50mm</span>
+    <button class="mob-sbtn" onclick="openMobDrawer()" style="min-width:28px;border-color:var(--ac);color:var(--ac);">⚙</button>
+  </div>
+</div>
 
 <!-- スマホ用ドロワー -->
 <div id="mob-drawer" onclick="closeMobDrawerBg(event)">
@@ -2519,16 +2496,13 @@ function mobLayout(){
 
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const tabH    = tabBar ? tabBar.offsetHeight||30 : 30;
-  const isPort  = compMode==='port';
-  // ムーンプランナーと同様に固定値で計算（offsetHeightの誤差を避ける）
-  const opsEl   = document.getElementById('mob-sliders');
-  const settEl  = document.getElementById('mob-settings-btn');
-  const opsH    = (opsEl ? opsEl.offsetHeight : 0) + (settEl ? settEl.offsetHeight : 0) || 88;
-  // ムーンプランナーと同方式: avH*0.45基準
-  const pvH_land = Math.round(H * 0.45);
+  const tabH     = tabBar ? tabBar.offsetHeight||30 : 30;
+  const isPort   = compMode==='port';
+  const mobBarH  = 96;
+  // ムーンプランナーと同方式: wrap{bottom:mob-bar}なのでavH=window.innerHeight-mobBarH
+  const avH      = H - mobBarH;
+  const pvH_land = Math.round(avH * 0.45);
   const bodyH_land = pvH_land - tabH;
-  // 縦構図: canvas W↔H入替
   const cvH_land = bodyH_land;
   const cvW_land_full = Math.round(cvH_land * 3/2);
   const maxCvW = Math.round(W * 0.9);
@@ -2537,7 +2511,7 @@ function mobLayout(){
   const cvW_port = cvHfinal_land;
   const cvH_port = cvW_land;
   const pvH = isPort ? cvH_port + tabH : pvH_land;
-  const mapH = H - pvH - opsH;
+  const mapH = avH - pvH;
   const mapbox = document.getElementById('mapbox');
   if(mapbox){ mapbox.style.flex='none'; mapbox.style.height=Math.max(80,mapH)+'px'; }
   simPanel.style.height = pvH + 'px';
