@@ -1614,7 +1614,6 @@ function shiftMobSlider(sliderId, lblId, delta, unit){
 // 焦点距離キーパッド
 let _focalPadTarget='pc';
 function openFocalPad(target){
-  alert('openFocalPad called: ' + target);
   _focalPadTarget=target;
   const cur=target==='mob'?getMobFocal():(parseFloat(document.getElementById('sl-focal').value)||50);
   _hkBuf.focal=String(cur);
@@ -1624,9 +1623,7 @@ function openFocalPad(target){
 }
 function closeFocalPad(){
   const ov=document.getElementById('focal-pad-overlay');
-  alert('closeFocalPad: ov=' + (ov?'found':'null') + ' display=' + (ov?ov.style.display:'?'));
   if(ov){ ov.style.display='none'; }
-  alert('after close: display=' + (ov?ov.style.display:'?'));
   _hkBuf.focal='';
 }
 function focalPadInput(k){
@@ -2391,7 +2388,6 @@ function closeMobPanel(){
 
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
-  alert('openMobDrawer called');
   refreshMobDrawerSelects();
   const d=document.getElementById('mob-drawer');
   d.style.display='block';
@@ -2982,8 +2978,8 @@ function init(){
 init();
 </script>
 <!-- 焦点距離キーパッド -->
-<div id="focal-pad-overlay" class="hk-overlay" onclick="closeFocalPad()">
-  <div class="hk-popup" onclick="event.stopPropagation()">
+<div id="focal-pad-overlay" class="hk-overlay" onclick="if(event.target===this)closeFocalPad()">
+  <div class="hk-popup">
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">焦点距離 (mm)</div>
     <div id="focal-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
@@ -3005,8 +3001,8 @@ init();
 </div>
 
 <!-- 三脚高さキーパッド -->
-<div id="tripod-pad-overlay" class="hk-overlay" onclick="closeTripodPad()">
-  <div class="hk-popup" onclick="event.stopPropagation()">
+<div id="tripod-pad-overlay" class="hk-overlay" onclick="if(event.target===this)closeTripodPad()">
+  <div class="hk-popup">
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">三脚高さ (cm)</div>
     <div id="tripod-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
@@ -3028,8 +3024,8 @@ init();
 </div>
 
 <!-- 標高オフセットキーパッド -->
-<div id="elev-pad-overlay" class="hk-overlay" onclick="closeElevPad()">
-  <div class="hk-popup" onclick="event.stopPropagation()">
+<div id="elev-pad-overlay" class="hk-overlay" onclick="if(event.target===this)closeElevPad()">
+  <div class="hk-popup">
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">標高オフセット (m)</div>
     <div id="elev-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
