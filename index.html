@@ -208,6 +208,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .hk-sign:active{background:var(--bd);}
 
 #mob-drawer{display:none;position:fixed;inset:0;z-index:2000;}
+#mob-settings-btn{display:none;padding:4px 8px;background:var(--sur);border-top:1px solid var(--bd);flex-shrink:0;}
 
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
@@ -259,6 +260,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   #mob-sliders{display:flex!important;}
 
   /* スマホ設定ボタン */
+  #mob-settings-btn{display:flex!important;}
 
   /* ドロワーはJSで制御（初期はdisplay:none） */
 }
@@ -490,17 +492,114 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">−</button>
         <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+</button>
       </div>
-      <!-- 3行目：焦点距離＋縦横＋設定 -->
+      <!-- 3行目：焦点距離 -->
       <div class="mob-ctrl-row">
         <button class="mob-focal-disp" onclick="openFocalPad('mob')" id="mob-lbl-focal-btn">50mm</button>
         <input type="range" id="mob-sl-focal" min="9" max="1200" value="50" step="1" oninput="onMobSlider()" class="mob-sl">
         <span id="mob-lbl-focal" style="display:none;">50mm</span>
-        <button class="mob-sbtn" onclick="openMobDrawer()" style="font-size:12px;">⚙</button>
       </div>
+    </div>
+
+    <!-- スマホ設定ボタン（mob-slidersの外） -->
+    <div id="mob-settings-btn">
+      <button class="pb pri" style="width:100%;padding:8px;font-size:11px;" onclick="openMobModal()">
+        ⚙ 設定（花火・筒場・対象・号数テーブル）
+      </button>
     </div>
 
   </div><!-- #right -->
 </div><!-- #wrap -->
+
+<!-- スマホ用設定モーダル -->
+<div id="mob-modal" class="modal-overlay" onclick="if(event.target===this)closeMobModal()" style="display:none;align-items:flex-end;padding:0;">
+  <div style="background:var(--sur);border-radius:16px 16px 0 0;width:100%;max-height:85vh;
+    display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;
+      padding:10px 14px 8px;border-bottom:1px solid var(--bd);flex-shrink:0;">
+      <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--ac);">⚙ 設定</span>
+      <div onclick="closeMobModal()" style="cursor:pointer;font-size:18px;color:var(--sub);padding:4px 8px;">✕</div>
+    </div>
+    <div id="mob-modal-inner" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 40px;">
+
+    <!-- 花火大会 -->
+    <div class="mob-sec">🎆 花火大会</div>
+    <div class="ig" style="margin-bottom:4px;">
+      <select id="mob-sel-festival" onchange="onMobFestivalChange()"
+        style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+        padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
+        <option value="">-- 大会を選択 --</option>
+      </select>
+    </div>
+    <div class="row2" style="margin-bottom:10px;">
+      <button class="pb sm" onclick="openAddFestival()">＋ 新規大会</button>
+      <button class="pb sm" id="mob-btn-edit-festival" onclick="openEditFestival()" disabled>✎ 編集</button>
+    </div>
+
+    <!-- 筒場 -->
+    <div id="mob-tube-section" style="display:none;">
+      <div class="mob-sec">🔴 筒場</div>
+      <div class="ig" style="margin-bottom:4px;">
+        <select id="mob-sel-tube" onchange="onMobTubeChange()"
+          style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+          padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
+          <option value="">-- 筒場を選択 --</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <button class="pb sm" id="mob-btn-edit-tube" onclick="openEditTube()" disabled style="width:100%;">✎ 編集</button>
+      </div>
+    </div>
+
+    <!-- 対象物 -->
+    <div class="mob-sec">🏢 対象物</div>
+    <div class="ig" style="margin-bottom:4px;">
+      <select id="mob-sel-target" onchange="onMobTargetChange()"
+        style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+        padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
+        <option value="">-- 対象物を選択 --</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px;">
+      <button class="pb sm" id="mob-btn-edit-target" onclick="openEditTarget()" disabled style="width:100%;">✎ 編集</button>
+    </div>
+
+    <!-- 視点設定 -->
+    <div class="mob-sec">👁 視点設定</div>
+
+    <!-- 三脚高さ：現在値タップで直接入力＋増減ボタン列 -->
+    <div style="font-size:8px;color:var(--sub);margin-bottom:3px;">三脚高さ (cm)</div>
+    <div style="display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;">
+      <span id="mob-tripod-disp" onclick="openTripodInput()" title="タップで直接入力"
+        style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--ac);
+        flex-shrink:0;min-width:60px;text-align:center;cursor:pointer;border-bottom:1px dashed var(--ac);">150cm</span>
+      <div class="mob-tbtn" onclick="shiftTripod(-10)">−10</div>
+      <div class="mob-tbtn" onclick="shiftTripod(-5)">−5</div>
+      <div class="mob-tbtn" onclick="shiftTripod(-1)">−1</div>
+      <div class="mob-tbtn" onclick="shiftTripod(1)">+1</div>
+      <div class="mob-tbtn" onclick="shiftTripod(5)">+5</div>
+      <div class="mob-tbtn" onclick="shiftTripod(10)">+10</div>
+    </div>
+
+    <!-- 標高オフセット：現在値タップで直接入力＋増減ボタン列 -->
+    <div style="font-size:8px;color:var(--sub);margin-bottom:3px;">標高オフセット (m)</div>
+    <div style="display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;">
+      <span id="mob-elev-offset-disp" onclick="openElevOffsetInput()" title="タップで直接入力"
+        style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--ac);
+        flex-shrink:0;min-width:60px;text-align:center;cursor:pointer;border-bottom:1px dashed var(--ac);">+0m</span>
+      <div class="mob-tbtn" onclick="shiftElevOffset(-5)">−5</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(-1)">−1</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(-0.5)">−0.5</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(0.5)">+0.5</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(1)">+1</div>
+      <div class="mob-tbtn" onclick="shiftElevOffset(5)">+5</div>
+    </div>
+
+    <!-- 花火基本設定 -->
+    <div class="mob-sec">⚙ 花火基本設定</div>
+    <button class="pb sm" style="width:100%;margin-bottom:16px;" onclick="openSettings()">号数テーブルを編集（高さ・開花径）</button>
+        </div>
+  </div>
+</div>
 
 <!-- スマホ用ドロワー -->
 <div id="mob-drawer" onclick="closeMobDrawerBg(event)">
@@ -2386,6 +2485,16 @@ function closeMobPanel(){
 }
 
 // ==================== スマホドロワー ====================
+function openMobModal(){
+  const m = document.getElementById('mob-modal');
+  if(!m) return;
+  refreshMobDrawerSelects();
+  m.style.display='flex';
+}
+function closeMobModal(){
+  const m = document.getElementById('mob-modal');
+  if(m) m.style.display='none';
+}
 function openMobDrawer(){
   refreshMobDrawerSelects();
   const d=document.getElementById('mob-drawer');
