@@ -1624,7 +1624,9 @@ function openFocalPad(target){
 }
 function closeFocalPad(){
   const ov=document.getElementById('focal-pad-overlay');
+  alert('closeFocalPad: ov=' + (ov?'found':'null') + ' display=' + (ov?ov.style.display:'?'));
   if(ov){ ov.style.display='none'; }
+  alert('after close: display=' + (ov?ov.style.display:'?'));
   _hkBuf.focal='';
 }
 function focalPadInput(k){
