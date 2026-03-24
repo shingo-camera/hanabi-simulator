@@ -1905,9 +1905,9 @@ function mobLayout(){
   const settingH= settingEl ? settingEl.offsetHeight||44 : 44;
   const tabH    = tabBar ? tabBar.offsetHeight||30 : 30;
   const pvH     = H - mapH - sliderH - settingH;
-  const bodyH   = pvH - tabH;
-
   simPanel.style.height = pvH + 'px';
+  const simBodyEl = document.getElementById('sim-body');
+  const bodyH = simBodyEl ? simBodyEl.clientHeight : (pvH - tabH - 2);
 
   const isCam = currentTab==='cam';
   if(isCam){
@@ -2112,7 +2112,9 @@ function layout(){
   // プレビューパネル高さ：全体の55%（大きく）
   // 縦構図は3:2→2:3でパネルが高くなる
   const pvH_land = Math.round(avH * 0.55);
-  const bodyH_land = pvH_land - tabH;
+  // sim-bodyの実際の高さを使う（borderやpaddingを自動的に除いた値）
+  const simBody = document.getElementById('sim-body');
+  const bodyH_land = simBody ? simBody.clientHeight : (pvH_land - tabH - 2);
 
   // 横構図canvas: bodyHに収まる最大3:2
   const cvH_land = bodyH_land;
