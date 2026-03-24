@@ -215,11 +215,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
   #mob-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);
-    z-index:1999;opacity:0;pointer-events:none;transition:opacity .25s;}
+    z-index:9940;opacity:0;pointer-events:none;transition:opacity .25s;}
   #mob-overlay.open{opacity:1;pointer-events:auto;}
   #mob-drawer{display:flex;flex-direction:column;position:fixed;bottom:0;left:0;right:0;
     height:80vh;background:var(--sur);border-radius:16px 16px 0 0;
-    z-index:2000;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    z-index:9950;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
     overflow:hidden;}
   #mob-drawer.open{transform:translateY(0);}
   #tab-orient .tab-ob{
@@ -507,7 +507,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 <!-- スマホ用ドロワー -->
 <div id="mob-overlay" onclick="closeMobDrawer()"></div>
 <div id="mob-drawer">
-  <div id="mob-drawer-panel">
     <div id="mob-drawer-header">
       <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--ac);">⚙ 設定</span>
       <div onclick="closeMobDrawer()" style="cursor:pointer;font-size:18px;color:var(--sub);padding:4px 8px;">✕</div>
@@ -591,7 +590,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <div class="mob-sec">⚙ 花火基本設定</div>
     <button class="pb sm" style="width:100%;margin-bottom:16px;" onclick="openSettings()">号数テーブルを編集（高さ・開花径）</button>
     </div><!-- mob-drawer-inner -->
-  </div><!-- mob-drawer-panel -->
 </div><!-- mob-drawer -->
 
 <!-- スマホ横向きオーバーレイ（現行ツールと同方式） -->
@@ -2390,8 +2388,13 @@ function closeMobPanel(){
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
   refreshMobDrawerSelects();
-  document.getElementById('mob-drawer').classList.add('open');
-  document.getElementById('mob-overlay').classList.add('open');
+  const d = document.getElementById('mob-drawer');
+  const o = document.getElementById('mob-overlay');
+  d.classList.add('open');
+  // style直接操作でtransformを強制
+  d.style.transform = 'translateY(0)';
+  d.style.display = 'flex';
+  if(o){ o.classList.add('open'); }
 }
 function closeMobDrawer(){
   document.getElementById('mob-drawer').classList.remove('open');
