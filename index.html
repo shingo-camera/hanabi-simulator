@@ -147,7 +147,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   line-height:1.6;pointer-events:none;}
 
 /* モーダル共通 */
-.modal-overlay{display:none;position:fixed;inset:0;z-index:9100;
+.modal-overlay{display:none;position:fixed;inset:0;z-index:9200;
   background:rgba(0,0,0,.7);align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--sur);border:1px solid var(--bd);border-radius:8px;
@@ -187,12 +187,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* スマホ対応 */
 /* ━━ 数字キーパッド（三脚・標高オフセット） ━━ */
-.hk-overlay{display:none;position:fixed;inset:0;z-index:9600;
+.hk-overlay{display:none;position:fixed;inset:0;z-index:9300;
   background:rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;}
 .hk-overlay.open{display:block;}
 .hk-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-52%);
   background:var(--sur);border:1px solid var(--bd);border-radius:10px;
-  padding:14px 16px;z-index:9610;display:flex;flex-direction:column;align-items:center;
+  padding:14px 16px;z-index:9310;display:flex;flex-direction:column;align-items:center;
   box-shadow:0 8px 32px rgba(0,0,0,.7);width:200px;}
 .hk-btn{height:44px;display:flex;align-items:center;justify-content:center;
   background:var(--sur2);border:1px solid var(--bd);border-radius:6px;
@@ -207,7 +207,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .hk-sign{background:var(--sur2);border:1px solid var(--ac);color:var(--ac);}
 .hk-sign:active{background:var(--bd);}
 
-#mob-drawer{display:none;position:fixed;inset:0;z-index:9500;}
+#mob-drawer{display:none;position:fixed;inset:0;z-index:9100;}
 #mob-settings-btn{display:none;padding:4px 8px;background:var(--sur);border-top:1px solid var(--bd);flex-shrink:0;}
 
 #mob-bar{display:none;}
@@ -3003,10 +3003,10 @@ init();
 </div>
 
 <!-- 登録地点オーバーレイ -->
-<div id="pin-overlay" onclick="if(event.target===this)closePinPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9700;"></div>
+<div id="pin-overlay" onclick="if(event.target===this)closePinPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9400;"></div>
 <div id="pin-popup" style="display:none;position:fixed;top:5%;left:50%;transform:translateX(-50%);
   width:min(96vw,480px);max-height:88vh;background:var(--sur);border:1px solid var(--bd);
-  border-radius:8px;z-index:9710;flex-direction:column;overflow:hidden;">
+  border-radius:8px;z-index:9410;flex-direction:column;overflow:hidden;">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--bd);flex-shrink:0;">
     <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--ac);">🏷️ 登録地点（最大100件）</span>
     <span onclick="closePinPanel()" style="cursor:pointer;font-size:18px;color:var(--sub);padding:4px 8px;">✕</span>
