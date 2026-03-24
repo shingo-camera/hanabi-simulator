@@ -210,6 +210,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   #map-mode{gap:3px;white-space:nowrap;}
   .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
+  #tab-orient .tab-ob{
+    background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
+    border-radius:4px;padding:3px 10px;cursor:pointer;
+    font-family:'Space Mono',monospace;font-size:9px;
+    -webkit-tap-highlight-color:transparent;}
+  #tab-orient .tab-ob.on{border-color:var(--ac);color:var(--ac);background:rgba(232,135,74,0.12);}
   .mob-tbtn{flex-shrink:0;min-width:36px;height:28px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--bd);
     border-radius:4px;font-family:'Space Mono',monospace;font-size:10px;color:var(--sub);
@@ -412,8 +418,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div class="sim-tab diag" id="tab-diag" onclick="switchTab('diag')">╌ 横断面図</div>
         <span id="sim-tab-info"></span>
         <div id="tab-orient" style="display:none;margin-left:auto;gap:3px;padding:0 8px;align-items:center;">
-          <div class="ob on" id="tab-btn-land" onclick="setCompMode('land')" style="padding:2px 7px;">横</div>
-          <div class="ob" id="tab-btn-port" onclick="setCompMode('port')" style="padding:2px 7px;">縦</div>
+          <div class="tab-ob on" id="tab-btn-land" onclick="setCompMode('land')">横</div>
+          <div class="tab-ob" id="tab-btn-port" onclick="setCompMode('port')">縦</div>
         </div>
       </div>
       <div id="sim-body">
@@ -2016,7 +2022,7 @@ function renderDiag(){
   const yMin = Math.min(...allY); const yMax = Math.max(...allY);
 
   // マージン
-  const ML=38, MR=12, MT=20, MB=36;
+  const ML=62, MR=12, MT=20, MB=36;
   const PW = W - ML - MR;
   const PH = H - MT - MB;
 
@@ -2117,6 +2123,47 @@ function renderDiag(){
   // 地面マーカー（花火の後に描いて上に重なるように）
   ctx.fillStyle='#e8874a';
   ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
+
+  // ── 花火の高さ水平破線ライン（左端へ）＋数値ラベル ──
+  // 全号数の最大高さ・中心高さ・最小高さを収集してY位置が近いものをまとめる
+  {
+    const lineItems = []; // {y:実高さm, label:文字列, color:色}
+    numRows.forEach((row, ni) => {
+      const color = CV_COLORS[ni % CV_COLORS.length];
+      const yCenter = tubeElev + row.height;
+      const yTop    = tubeElev + row.height + row.dia/2;
+      const yBot    = tubeElev + row.height - row.dia/2;
+      lineItems.push({y:yTop,    label:`${row.num}号 最大 ${yTop.toFixed(0)}m`,    color, dash:[2,3], alpha:0.5});
+      lineItems.push({y:yCenter, label:`${row.num}号 中心 ${yCenter.toFixed(0)}m`, color, dash:[4,2], alpha:0.8});
+      lineItems.push({y:yBot,    label:`${row.num}号 最小 ${yBot.toFixed(0)}m`,    color, dash:[2,3], alpha:0.5});
+    });
+
+    // 各ラインを描画
+    lineItems.forEach(item => {
+      const cy = toCanvasY(item.y);
+      if(cy < MT - 2 || cy > H - MB + 2) return; // 描画範囲外はスキップ
+
+      // 左端から筒場Xまで破線
+      ctx.strokeStyle = item.color;
+      ctx.globalAlpha = item.alpha;
+      ctx.lineWidth   = 0.7;
+      ctx.setLineDash(item.dash);
+      ctx.beginPath();
+      ctx.moveTo(ML, cy);
+      ctx.lineTo(toCanvasX(xTube), cy);
+      ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+      // 左マージン内にラベル（右揃え）
+      ctx.fillStyle = item.color;
+      ctx.globalAlpha = item.alpha + 0.1;
+      ctx.font = '6px Space Mono,monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.label, ML - 2, cy);
+      ctx.globalAlpha = 1;
+    });
+  }
 
   // ── 視点マーカー ──
   const vpCX = toCanvasX(0);
