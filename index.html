@@ -381,24 +381,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
     <!-- スマホ用スライダーエリア（#right内） -->
     <div id="mob-sliders">
-      <div class="sl-row">
-        <label>左右方向 <span id="mob-lbl-az">0°</span></label>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1"
-            oninput="onMobSlider()" style="flex:1;">
-          <button onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')"
-            style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 6px;cursor:pointer;font-size:11px;line-height:18px;">↺</button>
+      <!-- 1行目：左右 + 縦横ボタン -->
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="sl-row" style="flex:1;min-width:0;">
+          <label>左右 <span id="mob-lbl-az">0°</span></label>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1"
+              oninput="onMobSlider()" style="flex:1;">
+            <button onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')"
+              style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">↺</button>
+          </div>
+        </div>
+        <!-- 縦横切替 -->
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+          <div class="ob on" id="mob-btn-land" onclick="setCompMode('land')" style="padding:2px 8px;text-align:center;">横</div>
+          <div class="ob" id="mob-btn-port" onclick="setCompMode('port')" style="padding:2px 8px;text-align:center;">縦</div>
         </div>
       </div>
+      <!-- 2行目：上下 -->
       <div class="sl-row">
-        <label>上下方向 <span id="mob-lbl-el">0°</span></label>
-        <div style="display:flex;align-items:center;gap:6px;">
+        <label>上下 <span id="mob-lbl-el">0°</span></label>
+        <div style="display:flex;align-items:center;gap:4px;">
           <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1"
             oninput="onMobSlider()" style="flex:1;">
           <button onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')"
-            style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 6px;cursor:pointer;font-size:11px;line-height:18px;">↺</button>
+            style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">↺</button>
         </div>
       </div>
+      <!-- 3行目：焦点距離 -->
       <div class="sl-row">
         <label>焦点距離 <span id="mob-lbl-focal">50mm</span></label>
         <input type="range" id="mob-sl-focal" min="9" max="600" value="50" step="1"
@@ -421,6 +431,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   <div id="mob-drawer-bg"></div>
   <div id="mob-drawer-panel">
     <div class="mob-drawer-handle"></div>
+
+    <!-- プレビュー構図 -->
+    <div class="mob-sec">◎ プレビュー構図</div>
+    <div class="orient-row" style="margin-bottom:12px;">
+      <div class="ob on" id="mob-btn-land" onclick="setCompMode('land');closeMobDrawer();">横</div>
+      <div class="ob" id="mob-btn-port" onclick="setCompMode('port');closeMobDrawer();">縦</div>
+    </div>
 
     <!-- 花火大会 -->
     <div class="mob-sec">🎆 花火大会</div>
@@ -2083,6 +2100,10 @@ function setCompMode(o){
   compMode=o;
   document.getElementById('btn-land').classList.toggle('on', o==='land');
   document.getElementById('btn-port').classList.toggle('on', o==='port');
+  const ml=document.getElementById('mob-btn-land');
+  const mp=document.getElementById('mob-btn-port');
+  if(ml) ml.classList.toggle('on', o==='land');
+  if(mp) mp.classList.toggle('on', o==='port');
   layout();
   drawFovLines();
 }
@@ -2116,39 +2137,32 @@ function layout(){
   const simBody = document.getElementById('sim-body');
   const bodyH_land = simBody ? simBody.clientHeight : (pvH_land - tabH - 2);
 
-  // 横構図canvas: bodyHに収まる最大3:2
-  const cvH_land = bodyH_land;
+  // パネル高さは縦横共通（地図を確保するため）
+  const pvPanelH = pvH_land;
+  simPanel.style.height = pvPanelH + 'px';
+
+  // sim-bodyの実際の高さを再取得
+  const bodyH = simBody ? simBody.clientHeight : bodyH_land;
+
+  // 横構図: 高さ基準で3:2
+  const cvH_land = bodyH;
   const cvW_land = Math.round(cvH_land * 3/2);
 
-  // 縦構図: W↔H入替
-  const cvW_port = cvH_land;
-  const cvH_port = cvW_land;
+  // 縦構図: 高さ基準で2:3（bodyHに収める）
+  const cvH_port = bodyH;
+  const cvW_port = Math.round(cvH_port * 2/3);
 
   const cvW = isPort ? cvW_port : cvW_land;
   const cvH = isPort ? cvH_port : cvH_land;
 
-  // 縦構図でパネル高さが増える
-  const pvPanelH = isPort ? cvH_port + tabH : pvH_land;
-
-  // 地図の高さ = 残り
-  const mapH = avH - pvPanelH;
-
-  // sim-panel高さ（地図はflex:1で残りを自動的に取る）
-  simPanel.style.height = pvPanelH + 'px';
-
   if(isCam){
     if(diagWrap) diagWrap.style.display = 'none';
 
-    // canvasサイズ: rightWに収まる最大3:2（or縦構図2:3）
-    let cW, cH;
-    if(isPort){
-      cH = bodyH_land;
-      cW = Math.round(cH * 2/3);
-      if(cW > rightW){ cW = rightW; cH = Math.round(cW * 3/2); }
-    } else {
-      cH = bodyH_land;
-      cW = Math.round(cH * 3/2);
-      if(cW > rightW){ cW = rightW; cH = Math.round(cW * 2/3); }
+    // rightWを超えないよう調整
+    let cW = cvW, cH = cvH;
+    if(cW > rightW){
+      cW = rightW;
+      cH = isPort ? Math.round(cW * 3/2) : Math.round(cW * 2/3);
     }
     // cv-wrapをcanvasサイズに合わせる
     if(cvWrap){
