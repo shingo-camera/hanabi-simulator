@@ -1043,14 +1043,18 @@ function onFestivalChange(){
 function refreshFestivalSelects(){
   const opts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
   const empty = '<option value="">-- 大会を選択 --</option>';
-  document.getElementById('sel-festival').innerHTML = empty + opts;
+  // PC側：現在値を保持
+  const pcSel = document.getElementById('sel-festival');
+  const pcPrev = pcSel ? pcSel.value : '';
+  pcSel.innerHTML = empty + opts;
+  if(pcPrev) pcSel.value = pcPrev;
   document.getElementById('inp-tube-festival').innerHTML = opts;
-  // ドロワーの大会セレクトも更新
+  // スマホドロワーのセレクトも更新
   const mobFest = document.getElementById('mob-sel-festival');
   if(mobFest){
-    const prev = mobFest.value;
+    const mobPrev = mobFest.value || pcPrev;
     mobFest.innerHTML = '<option value="">-- 大会を選択 --</option>' + opts;
-    if(prev) mobFest.value = prev;
+    if(mobPrev) mobFest.value = mobPrev;
   }
   // 編集中の値を復元
   onFestivalChange();
@@ -1289,13 +1293,17 @@ function onTargetChange(){
 function refreshTargetSelects(){
   const opts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
   const empty = '<option value="">-- 対象物を選択 --</option>';
-  document.getElementById('sel-target').innerHTML = empty + opts;
-  // ドロワーの対象セレクトも更新
+  // PC側：現在値を保持
+  const pcSel = document.getElementById('sel-target');
+  const pcPrev = pcSel ? pcSel.value : '';
+  pcSel.innerHTML = empty + opts;
+  if(pcPrev) pcSel.value = pcPrev;
+  // スマホ側：現在値を保持（PC側と同期）
   const mobTg = document.getElementById('mob-sel-target');
   if(mobTg){
-    const prev = mobTg.value;
+    const mobPrev = mobTg.value || pcPrev;
     mobTg.innerHTML = empty + opts;
-    if(prev) mobTg.value = prev;
+    if(mobPrev) mobTg.value = mobPrev;
   }
 }
 
