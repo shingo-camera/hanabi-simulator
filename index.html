@@ -2135,30 +2135,25 @@ function layout(){
   simPanel.style.height = pvPanelH + 'px';
 
   if(isCam){
-    // 正面プレビュー: canvasを全幅に広げる
-    if(cvWrap){
-      cvWrap.style.display   = 'flex';
-      cvWrap.style.width     = rightW + 'px';
-      cvWrap.style.flexShrink= '0';
-      cvWrap.style.flexGrow  = '0';
-    }
     if(diagWrap) diagWrap.style.display = 'none';
 
     // canvasサイズ: rightWに収まる最大3:2（or縦構図2:3）
     let cW, cH;
     if(isPort){
-      // 縦構図: 高さ基準
       cH = bodyH_land;
       cW = Math.round(cH * 2/3);
       if(cW > rightW){ cW = rightW; cH = Math.round(cW * 3/2); }
     } else {
-      // 横構図: 高さ基準
       cH = bodyH_land;
       cW = Math.round(cH * 3/2);
       if(cW > rightW){ cW = rightW; cH = Math.round(cW * 2/3); }
     }
+    // cv-wrapをcanvasサイズに合わせる
+    if(cvWrap){
+      cvWrap.style.cssText = `display:block;width:${cW}px;height:${cH}px;flex-shrink:0;flex-grow:0;background:#060810;position:relative;overflow:visible;`;
+    }
     canvas.width = cW; canvas.height = cH;
-    canvas.style.cssText = `width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
+    canvas.style.cssText = `display:block;width:${cW}px;height:${cH}px;`;
     canvas.style.border = '1.5px solid var(--ac)';
 
   } else {
