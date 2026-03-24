@@ -1811,8 +1811,10 @@ function renderSim(){
   ctx.beginPath(); ctx.moveTo(0,horizY); ctx.lineTo(W,horizY); ctx.stroke();
   ctx.setLineDash([]);
 
-  // ── 対象物 3D描画 ──
-  {
+  // ── 対象物・花火を距離で前後ソートして描画 ──
+  // 対象描画関数
+  function drawTarget(){
+
     const tgTopY  = toY_cam(vaTop);
     const tgBaseY = toY_cam(vaBase);
     const thPx    = Math.max(tgBaseY - tgTopY, 1);
@@ -1946,9 +1948,11 @@ function renderSim(){
     ctx.fillStyle='rgba(126,184,232,0.9)';
     ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
     ctx.fillText(tg.name+' '+(tgElev+tg.height).toFixed(0)+'m', lblX, lblY-6);
-  }
+  } // drawTarget
 
-  // ── 花火（全筒場×全号数） ──
+  // 花火描画関数（全筒場）
+  function drawFireworks(){
+
   tubes.forEach((tb,ti)=>{
     const isSelected = tb.id===selTube.id;
     const color      = CV_COLORS[ti%CV_COLORS.length];
@@ -1994,6 +1998,21 @@ function renderSim(){
       }
     });
   });
+  } // drawFireworks
+
+  // 前後判定：視点→筒場の距離の最小値 vs 視点→対象の距離
+  const minTubeDkm = tubes.reduce((mn,tb)=>Math.min(mn, hav(simLat,simLng,tb.lat,tb.lng)), Infinity);
+  const tubeIsBehind = minTubeDkm > dKm; // 全筒場が対象より奥
+
+  if(tubeIsBehind){
+    // 花火が奥→先に花火を描き、対象を手前に重ねる
+    drawFireworks();
+    drawTarget();
+  } else {
+    // 通常：対象を先、花火を手前
+    drawTarget();
+    drawFireworks();
+  }
 
   // ── 情報表示 ──
   const fName=(db.festivals.find(f=>f.id===fid)||{}).name||'';
