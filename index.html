@@ -188,8 +188,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 /* スマホ対応 */
 /* ━━ 数字キーパッド（三脚・標高オフセット） ━━ */
 .hk-overlay{display:none;position:fixed;inset:0;z-index:9820;
-  background:rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;pointer-events:none;}
-.hk-overlay.open{display:block;pointer-events:auto;}
+  background:rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;}
+.hk-overlay.open{display:block;}
 .hk-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-52%);
   background:var(--sur);border:1px solid var(--bd);border-radius:10px;
   padding:14px 16px;z-index:9830;display:flex;flex-direction:column;align-items:center;
@@ -198,7 +198,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   background:var(--sur2);border:1px solid var(--bd);border-radius:6px;
   font-family:'Space Mono',monospace;font-size:18px;font-weight:700;
   color:var(--tx);cursor:pointer;padding:0;
-  -webkit-tap-highlight-color:transparent;-webkit-appearance:none;}
+  -webkit-tap-highlight-color:transparent;-webkit-appearance:none;
+  touch-action:manipulation;}
 .hk-btn:active{background:var(--bd);}
 .hk-del{color:var(--sub);font-size:20px;}
 .hk-ok{background:var(--ac);color:var(--bg);border-color:var(--ac);}
@@ -232,14 +233,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   .mob-sbtn{flex-shrink:0;min-width:26px;height:22px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--bd);
     border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);
-    cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0;}
+    cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0;
+    touch-action:manipulation;}
   .mob-sbtn:active{border-color:var(--ac);color:var(--ac);}
   .mob-sbtn.on{border-color:var(--ac);color:var(--ac);background:rgba(232,135,74,0.12);}
   .mob-sbtn-ac{border-color:var(--ac);color:var(--ac);}
   .mob-focal-disp{flex-shrink:0;min-width:44px;height:22px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--ac);
     border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
-    color:var(--ac);cursor:pointer;padding:0;}
+    color:var(--ac);cursor:pointer;padding:0;touch-action:manipulation;}
   :root{--hdr:0px;}
   #hdr{display:none;}
   #wrap{top:0;bottom:0;flex-direction:column;}
@@ -1494,20 +1496,24 @@ let _hkBuf = {tripod:'', elev:'', focal:''};
 function openTripodPad(){
   _hkBuf.tripod = String(tripodH);
   _hkUpdateDisp('tripod');
-  document.getElementById('tripod-pad-overlay').classList.add('open');
+  const ov=document.getElementById('tripod-pad-overlay');
+  if(ov) ov.style.display='block';
 }
 function closeTripodPad(){
-  document.getElementById('tripod-pad-overlay').classList.remove('open');
+  const ov=document.getElementById('tripod-pad-overlay');
+  if(ov) ov.style.display='none';
   _hkBuf.tripod='';
 }
 function openElevPad(){
   _hkBuf.elev = String(Math.abs(elevOffset));
   _hkElevSign = elevOffset < 0 ? -1 : 1;
   _hkUpdateDisp('elev');
-  document.getElementById('elev-pad-overlay').classList.add('open');
+  const ov=document.getElementById('elev-pad-overlay');
+  if(ov) ov.style.display='block';
 }
 function closeElevPad(){
-  document.getElementById('elev-pad-overlay').classList.remove('open');
+  const ov=document.getElementById('elev-pad-overlay');
+  if(ov) ov.style.display='none';
   _hkBuf.elev='';
 }
 let _hkElevSign = 1;
@@ -1612,10 +1618,12 @@ function openFocalPad(target){
   const cur=target==='mob'?getMobFocal():(parseFloat(document.getElementById('sl-focal').value)||50);
   _hkBuf.focal=String(cur);
   _hkFocalUpdateDisp();
-  document.getElementById('focal-pad-overlay').classList.add('open');
+  const ov=document.getElementById('focal-pad-overlay');
+  if(ov){ ov.style.display='block'; }
 }
 function closeFocalPad(){
-  document.getElementById('focal-pad-overlay').classList.remove('open');
+  const ov=document.getElementById('focal-pad-overlay');
+  if(ov){ ov.style.display='none'; }
   _hkBuf.focal='';
 }
 function focalPadInput(k){
