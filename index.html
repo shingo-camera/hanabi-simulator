@@ -263,6 +263,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <button class="pb sm" id="btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
     </div>
 
+    <!-- 花火基本設定 -->
+    <div class="sec" style="margin-top:10px;">🎆 花火基本設定</div>
+    <button class="pb sm" onclick="openSettings()" style="margin-bottom:6px;">⚙ 号数テーブルを編集</button>
+
     <!-- プレビュー操作 -->
     <div class="sec" style="margin-top:10px;">◎ プレビュー操作</div>
     <div class="orient-row" style="margin-bottom:6px;">
@@ -675,8 +679,9 @@ async function onViewPick(){
   viewElev = 0;
   try{ viewElev = await getElev(viewLat, viewLng); }catch(e){}
 
-  // 視点↔筒場ライン描画
+  // 視点↔筒場ライン・視野角ライン描画
   drawViewLines();
+  drawFovLines();
 
   // ラベル更新（筒場・対象それぞれの距離を表示）
   updateViewLabel();
@@ -1026,8 +1031,9 @@ function refreshMapMarkers(){
   tubeMarkers.forEach(m=>map.removeLayer(m));
   tubeMarkers=[];
   if(targetMarker){map.removeLayer(targetMarker);targetMarker=null;}
-  // 視点ラインも再描画
+  // 視点ライン・視野角ラインも再描画
   drawViewLines();
+  drawFovLines();
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
@@ -1058,6 +1064,7 @@ function refreshMapMarkers(){
 
 let shootingLines=[];  // 配列で管理（複数筒場×下線+上線）
 let viewLines=[];      // 視点↔筒場ライン
+let fovLines=[];       // 視野角ライン（地図上）
 let viewMarker=null;   // 視点マーカー
 let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
 let gCamAlpha=null, gFovV=null; // 断面図共有：カメラ光軸仰角(deg)・垂直画角(deg)
@@ -1123,6 +1130,69 @@ function drawViewLines(){  // 既存削除
   });
 }
 
+// ==================== 視野角ライン（地図） ====================
+function drawFovLines(){
+  fovLines.forEach(l=>map.removeLayer(l));
+  fovLines=[];
+  if(viewLat===null||viewLng===null) return;
+
+  const focal  = parseFloat(document.getElementById('sl-focal').value)||200;
+  const azOff  = parseFloat(document.getElementById('sl-az').value)||0;
+
+  // 水平画角（フルサイズ35mm換算）
+  const sensorW = compMode==='land' ? 36 : 24;
+  const fovH_deg = 2 * Math.atan(sensorW / (2 * focal)) * 180 / Math.PI;
+  const halfFov  = fovH_deg / 2;
+
+  // カメラの基本方位：視点→選択筒場、なければ北
+  const fid = document.getElementById('sel-festival').value;
+  const selTubeId = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+  const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
+  const tube  = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
+  const baseAz = tube ? brng(viewLat, viewLng, tube.lat, tube.lng) : 0;
+  const camAz  = (baseAz + azOff + 360) % 360;
+
+  // 扇形の奥行き
+  const DEPTH_KM = 20;
+
+  // 上端・下端方位
+  const azLeft  = (camAz - halfFov + 360) % 360;
+  const azRight = (camAz + halfFov + 360) % 360;
+
+  // 扇形の頂点（視点）＋左端・右端
+  const [latL, lngL] = destPoint(viewLat, viewLng, azLeft,  DEPTH_KM);
+  const [latR, lngR] = destPoint(viewLat, viewLng, azRight, DEPTH_KM);
+
+  // 弧を描くための中間点（12分割）
+  const arcPts = [];
+  const steps = 12;
+  for(let i=0; i<=steps; i++){
+    const az = (azLeft + (azRight - azLeft + 360) % 360 * i / steps) % 360;
+    arcPts.push(destPoint(viewLat, viewLng, az, DEPTH_KM));
+  }
+
+  // 扇形ポリゴン（視点 → 弧 → 視点）
+  const polyPts = [[viewLat, viewLng], ...arcPts, [viewLat, viewLng]];
+  const fan = L.polygon(polyPts, {
+    color:'#f5c842', weight:0, fillColor:'#f5c842', fillOpacity:0.08
+  }).addTo(map);
+  fovLines.push(fan);
+
+  // 左端ライン
+  const leftLine_u = L.polyline([[viewLat,viewLng],[latL,lngL]],{color:'#000000',weight:3,opacity:0.4,dashArray:'5,4'}).addTo(map);
+  const leftLine_o = L.polyline([[viewLat,viewLng],[latL,lngL]],{color:'#f5c842',weight:1.5,opacity:0.85,dashArray:'5,4'}).addTo(map);
+
+  // 右端ライン
+  const rightLine_u = L.polyline([[viewLat,viewLng],[latR,lngR]],{color:'#000000',weight:3,opacity:0.4,dashArray:'5,4'}).addTo(map);
+  const rightLine_o = L.polyline([[viewLat,viewLng],[latR,lngR]],{color:'#f5c842',weight:1.5,opacity:0.85,dashArray:'5,4'}).addTo(map);
+
+  // 弧ライン
+  const arcLine_u = L.polyline(arcPts,{color:'#000000',weight:3,opacity:0.4,dashArray:'5,4'}).addTo(map);
+  const arcLine_o = L.polyline(arcPts,{color:'#f5c842',weight:1.5,opacity:0.85,dashArray:'5,4'}).addTo(map);
+
+  fovLines.push(leftLine_u, leftLine_o, rightLine_u, rightLine_o, arcLine_u, arcLine_o);
+}
+
 // ==================== シミュレーター同期 ====================
 function syncSimSelects(){
   // 左パネル変更時にシミュレーター・断面図を再描画
@@ -1136,6 +1206,7 @@ function onSlider(){
   document.getElementById('lbl-el').textContent    = (document.getElementById('sl-el').value>0?'+':'')+document.getElementById('sl-el').value+'°';
   document.getElementById('lbl-focal').textContent = document.getElementById('sl-focal').value+'mm';
   renderSim();
+  drawFovLines();
 }
 
 // ==================== シミュレーション描画 ====================
@@ -1965,6 +2036,7 @@ function setCompMode(o){
   document.getElementById('btn-land').classList.toggle('on', o==='land');
   document.getElementById('btn-port').classList.toggle('on', o==='port');
   layout();
+  drawFovLines();
 }
 
 function layout(){
