@@ -186,27 +186,61 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .leaflet-popup-tip{background:var(--bd)!important;}
 
 /* スマホ対応 */
+/* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
-  :root{--hdr:0px;--mob-bar:44px;}
-  #wrap{top:0;bottom:var(--mob-bar);}
-  #pnl{display:none;position:fixed;inset:0;top:0;width:100%;z-index:1000;
-    background:var(--sur);padding:12px;}
-  #pnl.open{display:flex;flex-direction:column;}
-  #right{flex-direction:column;}
-  #mapbox{flex:none;height:45vh;}
-  #sim-panel{flex:1;min-height:0;}
-  #sliders{width:120px;}
-  #mob-bar{display:flex!important;}
+  :root{--hdr:0px;}
+  #hdr{display:none;}
+  #wrap{top:0;bottom:0;flex-direction:column;}
+  #pnl{display:none;}
+  #right{flex-direction:column;width:100%;overflow:hidden;}
+
+  /* 地図（上）・プレビュー（下） */
+  #mapbox{flex:none;height:35vh;}
+  #sim-panel{flex:none;}
+
+  /* スマホスライダー */
+  #mob-sliders{display:flex!important;}
+
+  /* スマホ設定ボタン */
+  #mob-settings-btn{display:flex!important;}
+
+  /* ドロワー */
+  #mob-drawer{display:block!important;}
 }
 
-#mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--mob-bar);
-  background:var(--sur);border-top:1px solid var(--bd);
-  z-index:900;align-items:center;justify-content:space-around;padding:0 8px;}
-#mob-bar .mb-btn{background:none;border:none;color:var(--sub);cursor:pointer;
-  font-family:'Space Mono',monospace;font-size:8px;display:flex;flex-direction:column;
-  align-items:center;gap:2px;padding:4px 8px;}
-#mob-bar .mb-btn.active{color:var(--ac);}
-#mob-bar .mb-btn .icon{font-size:16px;}
+/* landscape-overlay: JS制御（現行ツールと同方式・PCブラウザ縮小誤検知防止） */
+#landscape-overlay{display:none;position:fixed;inset:0;z-index:99999;
+  background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;
+  justify-content:center;gap:12px;}
+
+/* スマホスライダーエリア */
+#mob-sliders{display:none;flex-direction:column;gap:6px;padding:8px 12px;
+  background:var(--sur);border-top:1px solid var(--bd);flex-shrink:0;}
+#mob-sliders .sl-row{display:flex;flex-direction:column;gap:2px;}
+#mob-sliders .sl-row label{font-size:9px;color:var(--sub);
+  display:flex;justify-content:space-between;}
+#mob-sliders .sl-row label span{color:var(--ac);}
+
+/* スマホ設定ボタン */
+#mob-settings-btn{display:none;padding:8px 12px;background:var(--sur);
+  border-top:1px solid var(--bd);flex-shrink:0;}
+
+/* ドロワー */
+#mob-drawer{display:none;position:fixed;inset:0;z-index:2000;}
+#mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);}
+#mob-drawer-panel{position:absolute;bottom:0;left:0;right:0;
+  background:var(--sur);border-radius:16px 16px 0 0;
+  max-height:85vh;overflow-y:auto;padding:16px;}
+#mob-drawer-panel::-webkit-scrollbar{width:3px;}
+#mob-drawer-panel::-webkit-scrollbar-thumb{background:var(--bd);}
+.mob-drawer-handle{width:36px;height:4px;background:var(--bd);
+  border-radius:2px;margin:0 auto 14px;}
+.mob-sec{font-size:9px;color:var(--ac);text-transform:uppercase;
+  letter-spacing:.08em;margin:10px 0 5px;display:flex;align-items:center;gap:6px;}
+.mob-sec::after{content:'';flex:1;height:1px;background:var(--bd);}
+
+/* mob-bar削除（不要） */
+#mob-bar{display:none!important;}
 
 /* ノーデータ */
 .no-data{text-align:center;color:var(--sub);font-size:9px;padding:12px 0;line-height:1.8;}
@@ -351,14 +385,100 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   </div><!-- #right -->
 </div><!-- #wrap -->
 
-<!-- スマホ用ボトムバー -->
-<div id="mob-bar">
-  <button class="mb-btn" onclick="toggleMobPanel()">
-    <span class="icon">☰</span>登録
+<!-- スマホ用スライダーエリア -->
+<div id="mob-sliders">
+  <div class="sl-row">
+    <label>左右方向 <span id="mob-lbl-az">0°</span></label>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1"
+        oninput="onMobSlider()" style="flex:1;">
+      <button onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')"
+        style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 6px;cursor:pointer;font-size:11px;line-height:18px;">↺</button>
+    </div>
+  </div>
+  <div class="sl-row">
+    <label>上下方向 <span id="mob-lbl-el">0°</span></label>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1"
+        oninput="onMobSlider()" style="flex:1;">
+      <button onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')"
+        style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 6px;cursor:pointer;font-size:11px;line-height:18px;">↺</button>
+    </div>
+  </div>
+  <div class="sl-row">
+    <label>焦点距離 <span id="mob-lbl-focal">50mm</span></label>
+    <input type="range" id="mob-sl-focal" min="9" max="600" value="50" step="1"
+      oninput="onMobSlider()" style="width:100%;">
+  </div>
+</div>
+
+<!-- スマホ用設定ボタン -->
+<div id="mob-settings-btn">
+  <button class="pb pri" style="width:100%;padding:9px;font-size:11px;" onclick="openMobDrawer()">
+    ⚙ 設定（花火・筒場・対象・号数テーブル）
   </button>
-  <button class="mb-btn active">
-    <span class="icon">🎆</span>シミュ
-  </button>
+</div>
+
+<!-- スマホ用ドロワー -->
+<div id="mob-drawer" onclick="closeMobDrawerBg(event)">
+  <div id="mob-drawer-bg"></div>
+  <div id="mob-drawer-panel">
+    <div class="mob-drawer-handle"></div>
+
+    <!-- 花火大会 -->
+    <div class="mob-sec">🎆 花火大会</div>
+    <div class="ig" style="margin-bottom:4px;">
+      <select id="mob-sel-festival" onchange="onMobFestivalChange()"
+        style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+        padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
+        <option value="">-- 大会を選択 --</option>
+      </select>
+    </div>
+    <div class="row2" style="margin-bottom:10px;">
+      <button class="pb sm" onclick="openAddFestival()">＋ 新規大会</button>
+      <button class="pb sm" id="mob-btn-edit-festival" onclick="openEditFestival()" disabled>✎ 編集</button>
+    </div>
+
+    <!-- 筒場 -->
+    <div id="mob-tube-section" style="display:none;">
+      <div class="mob-sec">🔴 筒場</div>
+      <div class="ig" style="margin-bottom:4px;">
+        <select id="mob-sel-tube" onchange="onMobTubeChange()"
+          style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+          padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
+          <option value="">-- 筒場を選択 --</option>
+        </select>
+      </div>
+      <div class="row2" style="margin-bottom:10px;">
+        <button class="pb sm pri" onclick="closeMobDrawer();startAddTube()">＋ 地図で追加</button>
+        <button class="pb sm" id="mob-btn-edit-tube" onclick="openEditTube()" disabled>✎ 編集</button>
+      </div>
+    </div>
+
+    <!-- 対象物 -->
+    <div class="mob-sec">🏢 対象物</div>
+    <div class="ig" style="margin-bottom:4px;">
+      <select id="mob-sel-target" onchange="onMobTargetChange()"
+        style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
+        padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
+        <option value="">-- 対象物を選択 --</option>
+      </select>
+    </div>
+    <div class="row2" style="margin-bottom:10px;">
+      <button class="pb sm pri" onclick="closeMobDrawer();startAddTarget()">＋ 地図で追加</button>
+      <button class="pb sm" id="mob-btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
+    </div>
+
+    <!-- 花火基本設定 -->
+    <div class="mob-sec">⚙ 花火基本設定</div>
+    <button class="pb sm" style="width:100%;margin-bottom:16px;" onclick="openSettings()">号数テーブルを編集（高さ・開花径）</button>
+  </div>
+</div>
+
+<!-- スマホ横向きオーバーレイ（現行ツールと同方式） -->
+<div id="landscape-overlay">
+  <div style="font-size:48px;">📱</div>
+  <div style="font-family:'Space Mono',monospace;font-size:13px;color:var(--ac);letter-spacing:.08em;text-align:center;">縦向きにしてください</div>
 </div>
 
 <!-- ===== モーダル: 新規大会 ===== -->
@@ -810,6 +930,13 @@ function refreshFestivalSelects(){
   const empty = '<option value="">-- 大会を選択 --</option>';
   document.getElementById('sel-festival').innerHTML = empty + opts;
   document.getElementById('inp-tube-festival').innerHTML = opts;
+  // ドロワーの大会セレクトも更新
+  const mobFest = document.getElementById('mob-sel-festival');
+  if(mobFest){
+    const prev = mobFest.value;
+    mobFest.innerHTML = '<option value="">-- 大会を選択 --</option>' + opts;
+    if(prev) mobFest.value = prev;
+  }
   // 編集中の値を復元
   onFestivalChange();
 }
@@ -1033,7 +1160,13 @@ function refreshTargetSelects(){
   const opts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
   const empty = '<option value="">-- 対象物を選択 --</option>';
   document.getElementById('sel-target').innerHTML = empty + opts;
-
+  // ドロワーの対象セレクトも更新
+  const mobTg = document.getElementById('mob-sel-target');
+  if(mobTg){
+    const prev = mobTg.value;
+    mobTg.innerHTML = empty + opts;
+    if(prev) mobTg.value = prev;
+  }
 }
 
 // ==================== 地図マーカー更新 ====================
@@ -1222,9 +1355,12 @@ function resetSlider(sliderId, lblId, defaultLabel){
 }
 
 function onSlider(){
-  document.getElementById('lbl-az').textContent    = document.getElementById('sl-az').value+'°';
-  document.getElementById('lbl-el').textContent    = (document.getElementById('sl-el').value>0?'+':'')+document.getElementById('sl-el').value+'°';
-  document.getElementById('lbl-focal').textContent = document.getElementById('sl-focal').value+'mm';
+  const az    = document.getElementById('sl-az').value;
+  const el    = document.getElementById('sl-el').value;
+  const focal = document.getElementById('sl-focal').value;
+  document.getElementById('lbl-az').textContent    = az+'°';
+  document.getElementById('lbl-el').textContent    = (parseFloat(el)>0?'+':'')+el+'°';
+  document.getElementById('lbl-focal').textContent = focal+'mm';
   renderSim();
   drawFovLines();
 }
@@ -1275,9 +1411,11 @@ function renderSim(){
   const tube = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
 
   // 視点パラメータ
-  const focal     = parseFloat(document.getElementById('sl-focal').value);
-  const azOffDeg  = parseFloat(document.getElementById('sl-az').value);
-  const elOffDeg  = parseFloat(document.getElementById('sl-el').value);
+  // スマホ時はmob-sl-*を優先して読む
+  const isMobLayout = detectMobile();
+  const focal     = isMobLayout ? getMobFocal() : parseFloat(document.getElementById('sl-focal').value);
+  const azOffDeg  = isMobLayout ? getMobAz()    : parseFloat(document.getElementById('sl-az').value);
+  const elOffDeg  = isMobLayout ? getMobEl()    : parseFloat(document.getElementById('sl-el').value);
   const r = Math.PI/180;
 
   // gnomonic投影（現行ツールと同方式）
@@ -1920,15 +2058,185 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{
 });
 
 // ==================== スマホパネル ====================
+// ==================== スマホ判定（現行ツールと同方式） ====================
+function detectMobile(){
+  return /iPhone|iPod/i.test(navigator.userAgent)||
+         (/Android/i.test(navigator.userAgent)&&window.innerWidth<=600);
+}
+// スマホ横持ちオーバーレイ制御（PCブラウザ縮小時の誤検知をdetectMobile()で防ぐ）
+function updateLandscapeOverlay(){
+  const loEl=document.getElementById('landscape-overlay');
+  if(!loEl)return;
+  const isMobile=detectMobile();
+  const isLandscape=window.innerWidth>window.innerHeight;
+  loEl.style.display=(isMobile&&isLandscape)?'flex':'none';
+}
+let gIsMobile=detectMobile();
+
 function toggleMobPanel(){
   const pnl = document.getElementById('pnl');
   const close = document.getElementById('pnl-close');
   const isOpen = pnl.classList.contains('open');
   pnl.classList.toggle('open',!isOpen);
-  close.style.display = !isOpen?'block':'none';
+  if(close) close.style.display = !isOpen?'block':'none';
 }
 function closeMobPanel(){
-  document.getElementById('pnl').classList.remove('open');
+  const pnl = document.getElementById('pnl');
+  if(pnl) pnl.classList.remove('open');
+}
+
+// ==================== スマホドロワー ====================
+function openMobDrawer(){
+  refreshMobDrawerSelects();
+  document.getElementById('mob-drawer').style.display='block';
+}
+function closeMobDrawer(){
+  document.getElementById('mob-drawer').style.display='none';
+}
+function closeMobDrawerBg(e){
+  if(e.target===document.getElementById('mob-drawer-bg')) closeMobDrawer();
+}
+
+function refreshMobDrawerSelects(){
+  // 大会
+  const festOpts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
+  const mobFest = document.getElementById('mob-sel-festival');
+  if(mobFest){
+    mobFest.innerHTML = '<option value="">-- 大会を選択 --</option>' + festOpts;
+    const cur = document.getElementById('sel-festival').value;
+    if(cur) mobFest.value = cur;
+  }
+  onMobFestivalChange();
+  // 対象物
+  const tgOpts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
+  const mobTg = document.getElementById('mob-sel-target');
+  if(mobTg){
+    mobTg.innerHTML = '<option value="">-- 対象物を選択 --</option>' + tgOpts;
+    const cur = document.getElementById('sel-target').value;
+    if(cur) mobTg.value = cur;
+    const hasTg = !!mobTg.value;
+    const editBtn = document.getElementById('mob-btn-edit-target');
+    if(editBtn) editBtn.disabled = !hasTg;
+  }
+}
+function onMobFestivalChange(){
+  const fid = document.getElementById('mob-sel-festival').value;
+  // 左パネルと同期
+  const selFest = document.getElementById('sel-festival');
+  if(selFest) selFest.value = fid;
+  // 編集ボタン
+  const editBtn = document.getElementById('mob-btn-edit-festival');
+  if(editBtn) editBtn.disabled = !fid;
+  // 筒場セクション
+  const sec = document.getElementById('mob-tube-section');
+  if(sec) sec.style.display = fid ? 'block' : 'none';
+  // 筒場プルダウン更新
+  const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
+  const mobTube = document.getElementById('mob-sel-tube');
+  if(mobTube){
+    mobTube.innerHTML = '<option value="">-- 筒場を選択 --</option>' +
+      tubes.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.nums.join('/')}号)</option>`).join('');
+    const cur = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+    if(cur) mobTube.value = cur;
+  }
+  onMobTubeChange();
+  onFestivalChange();
+}
+function onMobTubeChange(){
+  const tid = document.getElementById('mob-sel-tube').value;
+  const selTube = document.getElementById('sel-tube');
+  if(selTube){ selTube.value = tid; onTubeChange(); }
+  const editBtn = document.getElementById('mob-btn-edit-tube');
+  if(editBtn) editBtn.disabled = !tid;
+  syncSimSelects();
+}
+function onMobTargetChange(){
+  const tid = document.getElementById('mob-sel-target').value;
+  const selTarget = document.getElementById('sel-target');
+  if(selTarget){ selTarget.value = tid; onTargetChange(); }
+  const editBtn = document.getElementById('mob-btn-edit-target');
+  if(editBtn) editBtn.disabled = !tid;
+}
+
+// ==================== スマホスライダー ====================
+function getMobFocal(){ return parseFloat(document.getElementById('mob-sl-focal').value)||50; }
+function getMobAz(){    return parseFloat(document.getElementById('mob-sl-az').value)||0; }
+function getMobEl(){    return parseFloat(document.getElementById('mob-sl-el').value)||0; }
+
+function onMobSlider(){
+  const az    = getMobAz();
+  const el    = getMobEl();
+  const focal = getMobFocal();
+  document.getElementById('mob-lbl-az').textContent    = (az>0?'+':'')+az+'°';
+  document.getElementById('mob-lbl-el').textContent    = (el>0?'+':'')+el+'°';
+  document.getElementById('mob-lbl-focal').textContent = focal+'mm';
+  // PCスライダーと同期
+  const slAz    = document.getElementById('sl-az');
+  const slEl    = document.getElementById('sl-el');
+  const slFocal = document.getElementById('sl-focal');
+  if(slAz)    slAz.value    = az;
+  if(slEl)    slEl.value    = el;
+  if(slFocal) slFocal.value = focal;
+  renderSim();
+  renderDiag();
+  drawFovLines();
+}
+function resetMobSlider(id, lblId, lblDefault, val='0'){
+  const sl = document.getElementById(id);
+  if(sl) sl.value = val;
+  const lbl = document.getElementById(lblId);
+  if(lbl) lbl.textContent = lblDefault;
+  onMobSlider();
+}
+
+// ==================== スマホlayout ====================
+function mobLayout(){
+  const isMob = detectMobile();
+  if(!isMob) return;
+  const canvas   = document.getElementById('sim-canvas');
+  const diagCanvas= document.getElementById('diag-canvas');
+  const cvClip   = document.getElementById('cv-clip');
+  const cvWrap   = document.getElementById('cv-wrap');
+  const diagWrap = document.getElementById('diag-wrap');
+  const simPanel = document.getElementById('sim-panel');
+  const tabBar   = document.getElementById('sim-tabs');
+  if(!canvas||!simPanel) return;
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const mapH    = Math.round(H * 0.35);
+  const sliderEl= document.getElementById('mob-sliders');
+  const settingEl= document.getElementById('mob-settings-btn');
+  const sliderH = sliderEl ? sliderEl.offsetHeight||90 : 90;
+  const settingH= settingEl ? settingEl.offsetHeight||44 : 44;
+  const tabH    = tabBar ? tabBar.offsetHeight||30 : 30;
+  const pvH     = H - mapH - sliderH - settingH;
+  const bodyH   = pvH - tabH;
+
+  simPanel.style.height = pvH + 'px';
+
+  const isCam = currentTab==='cam';
+  if(isCam){
+    if(cvWrap){ cvWrap.style.display='flex'; cvWrap.style.width=W+'px'; }
+    if(diagWrap) diagWrap.style.display='none';
+    // canvas: 3:2を全幅に
+    let cW = W, cH = Math.round(cW * 2/3);
+    if(cH > bodyH){ cH = bodyH; cW = Math.round(cH * 3/2); }
+    canvas.width = cW; canvas.height = cH;
+    canvas.style.cssText=`width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;`;
+    if(cvClip) cvClip.style.cssText=`width:${cW}px;height:${cH}px;overflow:hidden;border:1.5px solid var(--ac);box-sizing:border-box;`;
+  } else {
+    if(cvWrap) cvWrap.style.display='none';
+    if(diagWrap && diagCanvas){
+      diagWrap.style.display='flex';
+      diagWrap.style.width=W+'px';
+      diagWrap.style.height=bodyH+'px';
+      diagCanvas.width=W; diagCanvas.height=bodyH;
+      diagCanvas.style.cssText=`width:${W}px!important;height:${bodyH}px!important;display:block;background:#060810;`;
+    }
+  }
+  if(map) map.invalidateSize();
+  requestAnimationFrame(()=>{ if(isCam) renderSim(); else renderDiag(); });
 }
 
 // ==================== 地図連携ボタン ====================
@@ -2085,6 +2393,7 @@ function setCompMode(o){
 }
 
 function layout(){
+  if(detectMobile()){ mobLayout(); return; }
   const simPanel  = document.getElementById('sim-panel');
   const cvWrap    = document.getElementById('cv-wrap');
   const cvClip    = document.getElementById('cv-clip');
@@ -2182,10 +2491,16 @@ function layout(){
 }
 
 function onResize(){
+  gIsMobile=detectMobile();
+  updateLandscapeOverlay();
   if(map) map.invalidateSize();
   layout();
 }
 window.addEventListener('resize', onResize);
+// orientationchange: iOS Safariで確実に発火（resizeより先に来る場合がある）
+window.addEventListener('orientationchange',()=>{
+  setTimeout(()=>{ updateLandscapeOverlay(); layout(); }, 200);
+});
 
 // ==================== 初期化 ====================
 function init(){
@@ -2196,7 +2511,15 @@ function init(){
   refreshTubeSelect();
   onSlider();
   // layoutはDOMが確定してから（requestAnimationFrame）
-  requestAnimationFrame(()=>layout());
+  requestAnimationFrame(()=>{
+    updateLandscapeOverlay(); // 初期横向きチェック（現行ツールと同方式）
+    layout();
+    if(detectMobile()){
+      gIsMobile=true;
+      const lbl=document.getElementById('mob-lbl-focal');
+      if(lbl) lbl.textContent='50mm';
+    }
+  });
   // スマホ判定
   if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
     document.getElementById('pnl-close').style.display='block';
