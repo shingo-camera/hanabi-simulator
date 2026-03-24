@@ -124,7 +124,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 /* Canvasエリア */
 #cv-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
   background:#060810;position:relative;overflow:hidden;}
-#sim-canvas{display:block;}
+#cv-clip{overflow:hidden;flex-shrink:0;flex-grow:0;position:relative;
+  border:1.5px solid var(--ac);box-sizing:border-box;}
+#sim-canvas{display:block;background:#060810;flex-shrink:0;flex-grow:0;}
+
+/* 縦横切替ボタン */
+.orient-row{display:flex;gap:3px;}
+.orient-row .ob{background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
+  border-radius:3px;padding:2px 7px;cursor:pointer;font-family:'Space Mono',monospace;
+  font-size:8px;}
+.orient-row .ob.on{border-color:var(--ac);color:var(--ac);}
 
 /* 情報表示 */
 #sim-info{position:absolute;bottom:6px;left:8px;font-size:8px;color:var(--sub);
@@ -301,6 +310,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <select id="sim-sel-target" onchange="renderSim()">
           <option value="">--</option>
         </select>
+        <div style="margin-left:auto;">
+          <div class="orient-row">
+            <div class="ob on" id="btn-land" onclick="setCompMode('land')">横</div>
+            <div class="ob" id="btn-port" onclick="setCompMode('port')">縦</div>
+          </div>
+        </div>
       </div>
       <div id="sim-body">
         <div id="sliders">
@@ -318,7 +333,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
           </div>
         </div>
         <div id="cv-wrap">
-          <canvas id="sim-canvas"></canvas>
+          <div id="cv-clip">
+            <canvas id="sim-canvas"></canvas>
+          </div>
           <div id="sim-info"></div>
           <div id="view-info" style="position:absolute;bottom:6px;right:8px;font-size:8px;
             line-height:1.6;pointer-events:none;text-align:right;"></div>
@@ -1052,6 +1069,7 @@ let shootingLines=[];  // 配列で管理（複数筒場×下線+上線）
 let viewMarker=null;   // 視点マーカー
 let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
 let gCamAlpha=null, gFovV=null; // 断面図共有：カメラ光軸仰角(deg)・垂直画角(deg)
+let compMode='land'; // 横構図('land') / 縦構図('port')
 
 // 球面上でlat,lngからaz方向にdistKm進んだ座標を返す
 function destPoint(lat, lng, azDeg, distKm){
@@ -1170,8 +1188,9 @@ function renderSim(){
   // gnomonic投影（現行ツールと同方式）
   // センサー35mm換算
   const sensorW=36, sensorH=24;
-  const fovH_deg = 2*Math.atan(sensorW/(2*focal))/r;
-  const fovV_deg = 2*Math.atan(sensorH/(2*focal))/r;
+  // compModeにより縦横のfovを入れ替え（現行ツールと同方式）
+  const fovH_deg = compMode==='land' ? 2*Math.atan(sensorW/(2*focal))/r : 2*Math.atan(sensorH/(2*focal))/r;
+  const fovV_deg = compMode==='land' ? 2*Math.atan(sensorH/(2*focal))/r : 2*Math.atan(sensorW/(2*focal))/r;
   const f_px_H = W/(2*Math.tan(fovH_deg/2*r));
   const f_px_V = H/(2*Math.tan(fovV_deg/2*r));
   const gnoH = deg => f_px_H * Math.tan(deg*r);
@@ -1925,10 +1944,77 @@ async function getElev(lat,lng){
 }
 
 // ==================== リサイズ ====================
-function onResize(){
+function setCompMode(o){
+  if(o!=='land'&&o!=='port') return;
+  compMode=o;
+  document.getElementById('btn-land').classList.toggle('on', o==='land');
+  document.getElementById('btn-port').classList.toggle('on', o==='port');
+  layout();
+}
+
+function layout(){
+  const simPanel = document.getElementById('sim-panel');
+  const cvWrap   = document.getElementById('cv-wrap');
+  const cvClip   = document.getElementById('cv-clip');
+  const canvas   = document.getElementById('sim-canvas');
+  const diagWrap = document.getElementById('diag-wrap');
+  const diagCanvas = document.getElementById('diag-canvas');
+  if(!simPanel||!cvWrap||!cvClip||!canvas) return;
+
+  const isPort = compMode==='port';
+
+  // sim-panelの利用可能高さ・幅
+  const panelH = simPanel.clientHeight;
+  const panelW = simPanel.clientWidth;
+  const headerH = document.getElementById('sim-header').offsetHeight||36;
+  const slidersW = document.getElementById('sliders').offsetWidth||160;
+  const diagFixedW = 200; // diag-wrap固定幅
+
+  const avH = panelH - headerH;           // sim-body高さ
+  const avW = panelW - slidersW - diagFixedW; // cv-wrap利用可能幅
+
+  // 横構図基準のcanvasサイズ計算（現行ツールと同方式）
+  // 利用可能領域に収まる最大3:2サイズ
+  let cvW_land, cvH_land;
+  const byH = Math.round(avH * (3/2)); // 高さ基準の幅
+  const byW = Math.round(avW * (2/3)); // 幅基準の高さ
+  if(byH <= avW){
+    cvH_land = avH; cvW_land = byH;
+  } else {
+    cvW_land = avW; cvH_land = Math.round(avW * (2/3));
+  }
+  cvH_land = Math.max(60, cvH_land);
+  cvW_land = Math.max(90, cvW_land);
+
+  // 縦構図: 横構図を90度回転（W↔H入れ替え）
+  const cvW_port = cvH_land;
+  const cvH_port = cvW_land;
+
+  const cvW = isPort ? cvW_port : cvW_land;
+  const cvH = isPort ? cvH_port : cvH_land;
+
+  // canvas・cv-clipにサイズ強制セット
+  canvas.width  = cvW; canvas.height = cvH;
+  canvas.style.cssText = `width:${cvW}px!important;height:${cvH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
+  cvClip.style.cssText = `width:${cvW}px;height:${cvH}px;overflow:hidden;flex-shrink:0;flex-grow:0;border:1.5px solid var(--ac);box-sizing:border-box;`;
+
+  // diag-canvasサイズ（高さはavHに合わせる）
+  if(diagWrap && diagCanvas){
+    const dW = diagFixedW;
+    const dH = avH;
+    diagCanvas.width=dW; diagCanvas.height=dH;
+    diagCanvas.style.cssText=`width:${dW}px!important;height:${dH}px!important;display:block;background:#060810;`;
+    diagWrap.style.height = avH+'px';
+  }
+
   if(map) map.invalidateSize();
   renderSim();
   renderDiag();
+}
+
+function onResize(){
+  if(map) map.invalidateSize();
+  layout();
 }
 window.addEventListener('resize', onResize);
 
@@ -1940,8 +2026,8 @@ function init(){
   refreshTargetSelects();
   refreshTubeSelect();
   onSlider();
-  renderSim();
-  renderDiag();
+  // layoutはDOMが確定してから（requestAnimationFrame）
+  requestAnimationFrame(()=>layout());
   // スマホ判定
   if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
     document.getElementById('pnl-close').style.display='block';
