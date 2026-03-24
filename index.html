@@ -2922,42 +2922,41 @@ function init(){
     document.getElementById('mob-bar').style.display='flex';
   }
 
-  // ── ピンチズーム防止（Safari は user-scalable=no を無視するためJSで対処）──
-  // #map 内だけはLeafletのネイティブズームを許可
-  function blockPinch(e){ if(e.touches.length>=2) e.preventDefault(); }
-  const pinchOpt={passive:false};
+  // ── ピンチズーム防止（ムーンプランナーと同じ実装）──
+  function blockPinch(e){ if(e.touches.length >= 2) e.preventDefault(); }
+  const pinchOpt = { passive: false };
 
   // documentフォールバック（#map内は除外）
-  document.addEventListener('touchmove',e=>{
-    if(e.touches.length<2) return;
-    let el=e.target;
-    while(el){ if(el.id==='map') return; el=el.parentElement; }
+  document.addEventListener('touchmove', e => {
+    if(e.touches.length < 2) return;
+    let el = e.target;
+    while(el){ if(el.id === 'map') return; el = el.parentElement; }
     e.preventDefault();
-  },pinchOpt);
-  document.addEventListener('touchstart',e=>{
-    if(e.touches.length<2) return;
-    let el=e.target;
-    while(el){ if(el.id==='map') return; el=el.parentElement; }
-    e.preventDefault();
-  },pinchOpt);
+  }, pinchOpt);
 
-  // overflow/scroll要素に直接登録（passive強制を上書き）
-  // mob-drawer-panelはスクロール・スワイプを許可するため除外
-  // touchmove: 全要素でピンチブロック（mob-slidersは除外：ボタンタップを妨げないため）
-  ['wrap','right','sim-panel','sim-body','cv-wrap','diag-wrap',
-   'pnl','hdr'
-  ].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.addEventListener('touchmove',blockPinch,pinchOpt);
+  // overflow要素に直接登録（touchmoveのみ）
+  ['mob-drawer','mob-drawer-inner','pnl',
+   'sim-panel','cv-wrap','diag-wrap','right','wrap'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('touchmove', blockPinch, pinchOpt);
   });
-  // touchstart: mob-slidersは除外（ボタンタップを妨げないため）
-  ['wrap','right','sim-panel','sim-body','cv-wrap','diag-wrap',
-   'pnl','hdr'
-  ].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.addEventListener('touchstart',blockPinch,pinchOpt);
+  document.body.addEventListener('touchmove', blockPinch, pinchOpt);
+
+  // touchstart：2本指のみブロック（ムーンプランナーと同じ別関数）
+  function blockPinchStart(e){ if(e.touches.length >= 2) e.preventDefault(); }
+  ['mob-drawer','mob-drawer-inner','pnl',
+   'sim-panel','cv-wrap','diag-wrap','right','wrap'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('touchstart', blockPinchStart, pinchOpt);
   });
-  document.body.addEventListener('touchmove',blockPinch,pinchOpt);
+  document.addEventListener('touchstart', e => {
+    if(e.touches.length < 2) return;
+    let el = e.target;
+    while(el){ if(el.id === 'map') return; el = el.parentElement; }
+    e.preventDefault();
+  }, pinchOpt);
 
   // ── ドロワーを下スワイプで閉じる ──
   const drawerPanel=document.getElementById('mob-drawer-panel');
