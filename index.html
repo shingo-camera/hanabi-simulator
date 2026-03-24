@@ -208,19 +208,29 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .hk-sign:active{background:var(--bd);}
 
 #mob-drawer{display:none;}
+#mob-overlay{display:none;}
 
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
   #map-mode{gap:3px;white-space:nowrap;}
   .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
-  #mob-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);
-    z-index:9940;opacity:0;pointer-events:none;transition:opacity .25s;}
+  #mob-overlay{
+    display:block;
+    position:fixed;inset:0;background:rgba(0,0,0,.5);
+    z-index:9900;opacity:0;pointer-events:none;
+    transition:opacity .25s;
+  }
   #mob-overlay.open{opacity:1;pointer-events:auto;}
-  #mob-drawer{display:flex;flex-direction:column;position:fixed;bottom:0;left:0;right:0;
-    height:80vh;background:var(--sur);border-radius:16px 16px 0 0;
-    z-index:9950;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
-    overflow:hidden;}
+  #mob-drawer{
+    display:flex;flex-direction:column;
+    position:fixed;bottom:0;left:0;right:0;
+    height:80vh;
+    background:var(--sur);border-top:2px solid var(--bd);border-radius:12px 12px 0 0;
+    z-index:9950;
+    transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    overflow:hidden;
+  }
   #mob-drawer.open{transform:translateY(0);}
   #tab-orient .tab-ob{
     background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
@@ -2388,13 +2398,8 @@ function closeMobPanel(){
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
   refreshMobDrawerSelects();
-  const d = document.getElementById('mob-drawer');
-  const o = document.getElementById('mob-overlay');
-  d.classList.add('open');
-  // style直接操作でtransformを強制
-  d.style.transform = 'translateY(0)';
-  d.style.display = 'flex';
-  if(o){ o.classList.add('open'); }
+  document.getElementById('mob-drawer').classList.add('open');
+  document.getElementById('mob-overlay').classList.add('open');
 }
 function closeMobDrawer(){
   document.getElementById('mob-drawer').classList.remove('open');
