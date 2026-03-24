@@ -1454,9 +1454,10 @@ function renderSim(){
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
+  console.log('[renderSim] fid:', fid, 'tid:', tid);
   // 大会・対象が選択されていれば描画（視点未設定はデフォルト位置で代替）
   if(!fid||!tid){
-    ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
+    // 黒で塗らずにデバッグ表示を残す
     document.getElementById('sim-info').textContent='';
     return;
   }
