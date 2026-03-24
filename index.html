@@ -838,7 +838,7 @@ async function onViewPick(){
   updateViewLabel();
 
   // シミュレーション更新
-  renderSim();
+  layout();
 }
 
 function updateViewLabel(){
@@ -1060,7 +1060,7 @@ function deleteTubeFromModal(){
   editingTubeId=null;
   refreshTubeSelect();
   refreshMapMarkers();
-  renderSim();
+  layout();
 }
 function cancelAddTube(){
   closeModal('modal-tube');
@@ -1128,7 +1128,7 @@ function saveTarget(){
     editingTargetId=null;
     refreshTargetSelects();
     onTargetChange();
-    renderSim();
+    layout();
     return;
   }
   db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height, elev:pendingTargetElev, shape, width, depth, frontAz});
@@ -1363,7 +1363,7 @@ function drawFovLines(){
 // ==================== シミュレーター同期 ====================
 function syncSimSelects(){
   // 左パネル変更時にシミュレーター・断面図を再描画
-  renderSim();
+  layout();
   renderDiag();
 }
 
@@ -1372,7 +1372,7 @@ function syncSimSelects(){
 function shiftTripod(v, reset=false){
   tripodH = reset ? 150 : Math.max(0, Math.min(500, tripodH+v));
   updateTripodDisp();
-  renderSim(); renderDiag();
+  layout();
 }
 function updateTripodDisp(){
   const el = document.getElementById('mob-tripod-disp');
@@ -1385,13 +1385,13 @@ function openTripodInput(){
   if(isNaN(n)||n<0||n>500){ alert('0〜500cmで入力してください'); return; }
   tripodH = n;
   updateTripodDisp();
-  renderSim(); renderDiag();
+  layout();
 }
 
 function shiftElevOffset(v, reset=false){
   elevOffset = reset ? 0 : parseFloat((elevOffset+v).toFixed(2));
   updateElevOffsetDisp();
-  renderSim(); renderDiag();
+  layout();
 }
 function updateElevOffsetDisp(){
   const el = document.getElementById('mob-elev-offset-disp');
@@ -1406,7 +1406,7 @@ function openElevOffsetInput(){
   if(isNaN(n)){ alert('数値を入力してください'); return; }
   elevOffset = parseFloat(n.toFixed(2));
   updateElevOffsetDisp();
-  renderSim(); renderDiag();
+  layout();
 }
 
 function resetSlider(sliderId, lblId, defaultLabel){
@@ -1414,7 +1414,7 @@ function resetSlider(sliderId, lblId, defaultLabel){
   if(!sl) return;
   sl.value = 0;
   document.getElementById(lblId).textContent = defaultLabel;
-  renderSim();
+  layout();
   drawFovLines();
 }
 
@@ -1425,23 +1425,16 @@ function onSlider(){
   document.getElementById('lbl-az').textContent    = az+'°';
   document.getElementById('lbl-el').textContent    = (parseFloat(el)>0?'+':'')+el+'°';
   document.getElementById('lbl-focal').textContent = focal+'mm';
-  renderSim();
+  layout();
   drawFovLines();
 }
 
 // ==================== シミュレーション描画 ====================
 const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 
-function renderSim(){
+function renderSim(canvas, ctx, W, H){
+  if(!canvas||!ctx||!W||!H) return;
   try {
-  const canvas = document.getElementById('sim-canvas');
-  if(!canvas) return;
-  // canvasサイズがなければlayoutに委ねる（無限ループ防止のためlayoutは呼ばない）
-  if(!canvas.width || canvas.width < 10) return;
-  const W = canvas.width;
-  const H = canvas.height;
-  const ctx = canvas.getContext('2d');
-
   // 背景
   ctx.fillStyle='#060810';
   ctx.fillRect(0,0,W,H);
@@ -2095,7 +2088,7 @@ function saveNumTable(){
   });
   saveDB();
   closeModal('modal-settings');
-  renderSim();
+  layout();
 }
 function resetNumTable(){
   if(!confirm('号数テーブルをデフォルトに戻しますか？')) return;
@@ -2232,7 +2225,7 @@ function onMobSlider(){
   if(slAz)    slAz.value    = az;
   if(slEl)    slEl.value    = el;
   if(slFocal) slFocal.value = focal;
-  renderSim();
+  layout();
   renderDiag();
   drawFovLines();
 }
@@ -2280,6 +2273,7 @@ function mobLayout(){
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText=`width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;`;
     if(cvClip) cvClip.style.cssText=`width:${cW}px;height:${cH}px;overflow:hidden;border:1.5px solid var(--ac);box-sizing:border-box;`;
+    try{ renderSim(canvas, canvas.getContext('2d'), cW, cH); }catch(e){ console.error('renderSim:',e); }
   } else {
     if(cvWrap) cvWrap.style.display='none';
     if(diagWrap && diagCanvas){
@@ -2288,10 +2282,10 @@ function mobLayout(){
       diagWrap.style.height=bodyH+'px';
       diagCanvas.width=W; diagCanvas.height=bodyH;
       diagCanvas.style.cssText=`width:${W}px!important;height:${bodyH}px!important;display:block;background:#060810;`;
+      try{ renderDiag(); }catch(e){ console.error('renderDiag:',e); }
     }
   }
   if(map) map.invalidateSize();
-  if(currentTab==='cam') renderSim(); else renderDiag();
 }
 
 // ==================== 地図連携ボタン ====================
@@ -2520,6 +2514,7 @@ function layout(){
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText = `width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
     if(cvClip) cvClip.style.cssText = `width:${cW}px;height:${cH}px;overflow:hidden;flex-shrink:0;flex-grow:0;border:1.5px solid var(--ac);box-sizing:border-box;`;
+    try{ renderSim(canvas, canvas.getContext('2d'), cW, cH); }catch(e){ console.error('renderSim:',e); }
 
   } else {
     // 横断面図: 全幅
@@ -2535,7 +2530,6 @@ function layout(){
   }
 
   if(map) map.invalidateSize();
-  if(currentTab==='cam') renderSim(); else renderDiag();
 }
 
 function onResize(){
