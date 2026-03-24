@@ -276,6 +276,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 #mob-drawer-header{display:flex;justify-content:space-between;align-items:center;
   padding:10px 14px 8px;border-bottom:1px solid var(--bd);flex-shrink:0;}
 #mob-drawer-inner{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:12px 14px 80px;}
+.mob-tbtn{min-width:36px;height:28px;display:flex;align-items:center;justify-content:center;
+  background:var(--sur2);border:1px solid var(--bd);border-radius:3px;
+  font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;padding:0;}
+.mob-tbtn:active{border-color:var(--ac);color:var(--ac);}
+.mob-now-btn{cursor:pointer;font-size:9px;color:var(--ac);border:1px solid var(--ac);
+  border-radius:3px;padding:3px 6px;white-space:nowrap;background:none;
+  font-family:'Space Mono',monospace;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.mob-now-btn:active{opacity:0.7;}
 #mob-drawer-panel::-webkit-scrollbar{width:3px;}
 #mob-drawer-panel::-webkit-scrollbar-thumb{background:var(--bd);}
 .mob-drawer-handle{width:36px;height:4px;background:var(--bd);
@@ -515,13 +525,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     </div>
 
     <!-- 筒場 -->
-    <div id="mob-tube-section" style="display:none;">
+    <div id="mob-tube-section">
       <div class="mob-sec">🔴 筒場</div>
       <div class="ig" style="margin-bottom:4px;">
-        <select id="mob-sel-tube" onchange="onMobTubeChange()"
+        <select id="mob-sel-tube" onchange="onMobTubeChange()" disabled
           style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
-          padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
-          <option value="">-- 筒場を選択 --</option>
+          padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;
+          opacity:0.4;">
+          <option value="">-- 大会を選択してください --</option>
         </select>
       </div>
       <div style="margin-bottom:10px;">
@@ -545,32 +556,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <!-- 視点設定 -->
     <div class="mob-sec">👁 視点設定</div>
 
-    <!-- 三脚高さ：現在値タップで直接入力＋増減ボタン列 -->
-    <div style="font-size:8px;color:var(--sub);margin-bottom:3px;">三脚高さ (cm)</div>
-    <div style="display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;">
-      <span id="mob-tripod-disp" onclick="openTripodInput()" title="タップで直接入力"
-        style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--ac);
-        flex-shrink:0;min-width:60px;text-align:center;cursor:pointer;border-bottom:1px dashed var(--ac);">150cm</span>
-      <div class="mob-tbtn" onclick="shiftTripod(-10)">−10</div>
-      <div class="mob-tbtn" onclick="shiftTripod(-5)">−5</div>
-      <div class="mob-tbtn" onclick="shiftTripod(-1)">−1</div>
-      <div class="mob-tbtn" onclick="shiftTripod(1)">+1</div>
-      <div class="mob-tbtn" onclick="shiftTripod(5)">+5</div>
-      <div class="mob-tbtn" onclick="shiftTripod(10)">+10</div>
+    <!-- 三脚高さ -->
+    <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+      <span style="font-size:8.5px;color:var(--sub);font-family:'Space Mono',monospace;">三脚高さ</span>
+      <span id="mob-tripod-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">150<span style="font-size:8px;color:var(--sub);">cm</span></span>
+      <button class="mob-now-btn" onclick="shiftTripod(0,true)">Rst</button>
+    </div>
+    <div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="mob-tbtn" onclick="shiftTripod(-10)">−10</button>
+      <button class="mob-tbtn" onclick="shiftTripod(-5)">−5</button>
+      <button class="mob-tbtn" onclick="shiftTripod(-1)">−1</button>
+      <button class="mob-tbtn" onclick="shiftTripod(1)">+1</button>
+      <button class="mob-tbtn" onclick="shiftTripod(5)">+5</button>
+      <button class="mob-tbtn" onclick="shiftTripod(10)">+10</button>
     </div>
 
-    <!-- 標高オフセット：現在値タップで直接入力＋増減ボタン列 -->
-    <div style="font-size:8px;color:var(--sub);margin-bottom:3px;">標高オフセット (m)</div>
-    <div style="display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;">
-      <span id="mob-elev-offset-disp" onclick="openElevOffsetInput()" title="タップで直接入力"
-        style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--ac);
-        flex-shrink:0;min-width:60px;text-align:center;cursor:pointer;border-bottom:1px dashed var(--ac);">+0m</span>
-      <div class="mob-tbtn" onclick="shiftElevOffset(-5)">−5</div>
-      <div class="mob-tbtn" onclick="shiftElevOffset(-1)">−1</div>
-      <div class="mob-tbtn" onclick="shiftElevOffset(-0.5)">−0.5</div>
-      <div class="mob-tbtn" onclick="shiftElevOffset(0.5)">+0.5</div>
-      <div class="mob-tbtn" onclick="shiftElevOffset(1)">+1</div>
-      <div class="mob-tbtn" onclick="shiftElevOffset(5)">+5</div>
+    <!-- 標高オフセット -->
+    <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+      <span style="font-size:8.5px;color:var(--sub);font-family:'Space Mono',monospace;">標高オフセット</span>
+      <span id="mob-elev-offset-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">+0<span style="font-size:8px;color:var(--sub);">m</span></span>
+      <button class="mob-now-btn" onclick="shiftElevOffset(0,true)">Rst</button>
+    </div>
+    <div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="mob-tbtn" onclick="shiftElevOffset(-5)">−5</button>
+      <button class="mob-tbtn" onclick="shiftElevOffset(-3)">−3</button>
+      <button class="mob-tbtn" onclick="shiftElevOffset(-1)">−1</button>
+      <button class="mob-tbtn" onclick="shiftElevOffset(1)">+1</button>
+      <button class="mob-tbtn" onclick="shiftElevOffset(3)">+3</button>
+      <button class="mob-tbtn" onclick="shiftElevOffset(5)">+5</button>
     </div>
 
     <!-- 花火基本設定 -->
@@ -2420,9 +2433,13 @@ function onMobFestivalChange(){
   // 編集ボタン
   const editBtn = document.getElementById('mob-btn-edit-festival');
   if(editBtn) editBtn.disabled = !fid;
-  // 筒場セクション
-  const sec = document.getElementById('mob-tube-section');
-  if(sec) sec.style.display = fid ? 'block' : 'none';
+  // 筒場セクション：常に表示、大会未選択時はselectをdisabled+半透明
+  const mobTubeSelect = document.getElementById('mob-sel-tube');
+  if(mobTubeSelect){
+    mobTubeSelect.disabled = !fid;
+    mobTubeSelect.style.opacity = fid ? '1' : '0.4';
+    if(!fid) mobTubeSelect.innerHTML = '<option value="">-- 大会を選択してください --</option>';
+  }
   // 筒場プルダウン更新
   const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
   const mobTube = document.getElementById('mob-sel-tube');
@@ -2524,8 +2541,13 @@ function mobLayout(){
   if(isCam){
     if(diagWrap) diagWrap.style.display='none';
     // ムーンプランナー方式: 事前計算済みの値を使用
-    const cW = isPort ? cvW_port : cvW_land;
-    const cH = isPort ? cvH_port : cvHfinal_land;
+    let cW = isPort ? cvW_port : cvW_land;
+    let cH = isPort ? cvH_port : cvHfinal_land;
+    // 縦構図でcHがsim-body高さを超える場合はclamp
+    if(isPort && cH > bodyH){
+      cH = bodyH;
+      cW = Math.round(cH * 2/3);
+    }
     if(cvWrap){ cvWrap.style.display='flex'; cvWrap.style.width=cW+'px'; }
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText=`width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;`;
@@ -2844,11 +2866,16 @@ function layout(){
   if(isCam){
     if(diagWrap) diagWrap.style.display = 'none';
 
-    // rightWを超えないよう調整
+    // rightWを超えないよう調整、縦構図はbodyHも超えないようにclamp
     let cW = cvW, cH = cvH;
     if(cW > rightW){
       cW = rightW;
       cH = isPort ? Math.round(cW * 3/2) : Math.round(cW * 2/3);
+    }
+    // 縦構図でcHがbodyHを超える場合はbodyHに収める
+    if(isPort && cH > bodyH){
+      cH = bodyH;
+      cW = Math.round(cH * 2/3);
     }
     // cv-wrapをcanvasサイズに合わせる
     if(cvWrap){
