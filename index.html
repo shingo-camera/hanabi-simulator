@@ -2395,16 +2395,10 @@ function closeMobPanel(){
 
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
-  try{
-    refreshMobDrawerSelects();
-  }catch(e){ alert('refresh error: '+e.message); return; }
+  refreshMobDrawerSelects();
   const d=document.getElementById('mob-drawer');
-  if(!d){ alert('mob-drawer not found'); return; }
   d.style.display='block';
   d.classList.add('open');
-  const panel=document.getElementById('mob-drawer-panel');
-  const panelTransform=panel?getComputedStyle(panel).transform:'null';
-  alert('drawer display='+d.style.display+' class='+d.className+' panel='+panelTransform);
 }
 function closeMobDrawer(){
   const d=document.getElementById('mob-drawer');
@@ -2526,6 +2520,7 @@ function mobLayout(){
   const W = window.innerWidth;
   const H = window.innerHeight;
   const tabH    = tabBar ? tabBar.offsetHeight||30 : 30;
+  const isPort  = compMode==='port';
   // ムーンプランナーと同様に固定値で計算（offsetHeightの誤差を避ける）
   const opsH    = 88;
   // ムーンプランナーと同方式: avH*0.45基準
