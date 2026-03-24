@@ -1926,57 +1926,68 @@ function setCompMode(o){
 }
 
 function layout(){
-  const simPanel = document.getElementById('sim-panel');
-  const cvWrap   = document.getElementById('cv-wrap');
-  const cvClip   = document.getElementById('cv-clip');
-  const canvas   = document.getElementById('sim-canvas');
-  const diagWrap = document.getElementById('diag-wrap');
-  const diagCanvas = document.getElementById('diag-canvas');
+  const simPanel  = document.getElementById('sim-panel');
+  const cvWrap    = document.getElementById('cv-wrap');
+  const cvClip    = document.getElementById('cv-clip');
+  const canvas    = document.getElementById('sim-canvas');
+  const diagWrap  = document.getElementById('diag-wrap');
+  const diagCanvas= document.getElementById('diag-canvas');
   if(!simPanel||!cvWrap||!cvClip||!canvas) return;
 
   const isPort = compMode==='port';
 
-  // sim-panelの利用可能高さ・幅
-  const panelH = simPanel.clientHeight;
-  const panelW = simPanel.clientWidth;
-  const headerH = document.getElementById('sim-header').offsetHeight||36;
-  const diagFixedW = 200; // diag-wrap固定幅
+  // 全体サイズ（現行ツールと同方式）
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const hdrH  = document.getElementById('hdr').offsetHeight||40;
+  const pnlW  = document.getElementById('pnl').offsetWidth||210;
+  const hdrSim= document.getElementById('sim-header').offsetHeight||32;
+  const avH_total = H - hdrH;
+  const rightW    = W - pnlW;
 
-  const avH = panelH - headerH;       // sim-body高さ
-  const avW = panelW - diagFixedW;    // cv-wrap利用可能幅（スライダーは左パネルへ移動済み）
+  // sim-panelの高さは全体の45%（横構図基準）
+  const pvPanelH_land = Math.round(avH_total * 0.45);
+  const lblH = 0; // ラベル行なし（sim-headerがラベル代わり）
 
-  // 横構図基準のcanvasサイズ計算（現行ツールと同方式）
-  // 利用可能領域に収まる最大3:2サイズ
-  let cvW_land, cvH_land;
-  const byH = Math.round(avH * (3/2)); // 高さ基準の幅
-  const byW = Math.round(avW * (2/3)); // 幅基準の高さ
-  if(byH <= avW){
-    cvH_land = avH; cvW_land = byH;
-  } else {
-    cvW_land = avW; cvH_land = Math.round(avW * (2/3));
-  }
-  cvH_land = Math.max(60, cvH_land);
-  cvW_land = Math.max(90, cvW_land);
+  // ── 横構図基準のcanvasサイズ（現行ツールと同方式） ──
+  // cvH_landを先に決め、cvW_land = cvH_land * 3/2
+  const cvH_land = pvPanelH_land - hdrSim;
+  const cvW_land = Math.round(cvH_land * 3/2);
 
-  // 縦構図: 横構図を90度回転（W↔H入れ替え）
+  // 縦構図: 90度回転 → W↔H入れ替え
   const cvW_port = cvH_land;
   const cvH_port = cvW_land;
 
   const cvW = isPort ? cvW_port : cvW_land;
   const cvH = isPort ? cvH_port : cvH_land;
 
-  // canvas・cv-clipにサイズ強制セット
+  // 縦構図はパネル高さが増える（現行ツールと同方式）
+  const pvPanelH = isPort ? cvH_port + hdrSim : pvPanelH_land;
+
+  // diagWは残り全部（現行ツールと同方式: rightW - cvW）
+  const diagW = Math.max(80, rightW - cvW);
+  const diagH = pvPanelH - hdrSim;
+
+  // sim-panel高さ強制セット
+  simPanel.style.height = pvPanelH + 'px';
+
+  // cv-wrap幅をcvWに固定（余白なし）
+  cvWrap.style.width    = cvW + 'px';
+  cvWrap.style.flexShrink = '0';
+  cvWrap.style.flexGrow   = '0';
+
+  // canvas・cv-clip強制セット
   canvas.width  = cvW; canvas.height = cvH;
   canvas.style.cssText = `width:${cvW}px!important;height:${cvH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
   cvClip.style.cssText = `width:${cvW}px;height:${cvH}px;overflow:hidden;flex-shrink:0;flex-grow:0;border:1.5px solid var(--ac);box-sizing:border-box;`;
 
-  // diag-canvasサイズ（高さはavHに合わせる）
+  // diag-wrap・diag-canvas強制セット
   if(diagWrap && diagCanvas){
-    const dW = diagFixedW;
-    const dH = avH;
-    diagCanvas.width=dW; diagCanvas.height=dH;
-    diagCanvas.style.cssText=`width:${dW}px!important;height:${dH}px!important;display:block;background:#060810;`;
-    diagWrap.style.height = avH+'px';
+    diagCanvas.width=diagW; diagCanvas.height=diagH;
+    diagCanvas.style.cssText=`width:${diagW}px!important;height:${diagH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
+    diagWrap.style.width  = diagW + 'px';
+    diagWrap.style.height = pvPanelH + 'px';
+    diagWrap.style.flex   = 'none';
   }
 
   if(map) map.invalidateSize();
