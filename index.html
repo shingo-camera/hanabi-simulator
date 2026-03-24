@@ -346,6 +346,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div style="display:flex;align-items:center;gap:4px;">
           <input type="range" id="sl-az" min="-60" max="60" value="0" step="1" oninput="onSlider()" style="flex:1;">
           <button onclick="resetSlider('sl-az','lbl-az','0°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
+          <button onclick="shiftSlider('sl-az','lbl-az',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−</button>
+          <button onclick="shiftSlider('sl-az','lbl-az',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+</button>
         </div>
       </div>
       <div class="sl-row">
@@ -353,11 +355,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div style="display:flex;align-items:center;gap:4px;">
           <input type="range" id="sl-el" min="-60" max="60" value="0" step="1" oninput="onSlider()" style="flex:1;">
           <button onclick="resetSlider('sl-el','lbl-el','0°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
+          <button onclick="shiftSlider('sl-el','lbl-el',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−</button>
+          <button onclick="shiftSlider('sl-el','lbl-el',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+</button>
         </div>
       </div>
       <div class="sl-row">
         <label>焦点距離 <span id="lbl-focal">50mm</span></label>
-        <input type="range" id="sl-focal" min="9" max="600" value="50" step="1" oninput="onSlider()">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input type="range" id="sl-focal" min="9" max="600" value="50" step="1" oninput="onSlider()" style="flex:1;">
+          <button onclick="openFocalPad('pc')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;min-width:38px;"><span id="lbl-focal-btn">50mm</span></button>
+        </div>
       </div>
     </div>
 
@@ -430,8 +437,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div style="display:flex;align-items:center;gap:4px;">
           <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1"
             oninput="onMobSlider()" style="flex:1;">
-          <button onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')"
-            style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">↺</button>
+          <button onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;">↺</button>
+          <button onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;">−</button>
+          <button onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;">+</button>
         </div>
       </div>
       <!-- 2行目：上下 -->
@@ -440,15 +448,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div style="display:flex;align-items:center;gap:4px;">
           <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1"
             oninput="onMobSlider()" style="flex:1;">
-          <button onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')"
-            style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">↺</button>
+          <button onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;">↺</button>
+          <button onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;">−</button>
+          <button onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;">+</button>
         </div>
       </div>
       <!-- 3行目：焦点距離 -->
       <div class="sl-row">
         <label>焦点距離 <span id="mob-lbl-focal">50mm</span></label>
-        <input type="range" id="mob-sl-focal" min="9" max="600" value="50" step="1"
-          oninput="onMobSlider()" style="width:100%;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input type="range" id="mob-sl-focal" min="9" max="600" value="50" step="1"
+            oninput="onMobSlider()" style="flex:1;">
+          <button onclick="openFocalPad('mob')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:18px;flex-shrink:0;min-width:38px;"><span id="mob-lbl-focal-btn">50mm</span></button>
+        </div>
       </div>
     </div>
 
@@ -1442,7 +1454,7 @@ function syncSimSelects(){
 // ==================== スライダー ====================
 // ==================== 三脚高さ・標高オフセット ====================
 // ━━ 数字キーパッド（三脚・標高オフセット） ━━
-let _hkBuf = {tripod:'', elev:''};
+let _hkBuf = {tripod:'', elev:'', focal:''};
 
 function openTripodPad(){
   _hkBuf.tripod = String(tripodH);
@@ -1536,6 +1548,67 @@ function updateElevOffsetDisp(){
 }
 function openElevOffsetInput(){ openElevPad(); }
 
+// スライダーを1ステップ増減
+function shiftSlider(sliderId, lblId, delta, unit){
+  const sl=document.getElementById(sliderId);
+  if(!sl) return;
+  sl.value=Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), parseFloat(sl.value)+delta));
+  const lbl=document.getElementById(lblId);
+  if(lbl) lbl.textContent=(parseFloat(sl.value)>0&&unit==='°'?'+':'')+sl.value+unit;
+  onSlider();
+}
+function shiftMobSlider(sliderId, lblId, delta, unit){
+  const sl=document.getElementById(sliderId);
+  if(!sl) return;
+  sl.value=Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), parseFloat(sl.value)+delta));
+  const lbl=document.getElementById(lblId);
+  if(lbl) lbl.textContent=(parseFloat(sl.value)>0&&unit==='°'?'+':'')+sl.value+unit;
+  onMobSlider();
+}
+
+// 焦点距離キーパッド
+let _focalPadTarget='pc';
+function openFocalPad(target){
+  _focalPadTarget=target;
+  const cur=target==='mob'?getMobFocal():(parseFloat(document.getElementById('sl-focal').value)||50);
+  _hkBuf.focal=String(cur);
+  _hkFocalUpdateDisp();
+  document.getElementById('focal-pad-overlay').classList.add('open');
+}
+function closeFocalPad(){
+  document.getElementById('focal-pad-overlay').classList.remove('open');
+  _hkBuf.focal='';
+}
+function focalPadInput(k){
+  const buf=_hkBuf;
+  if(k==='DEL'){buf.focal=buf.focal.slice(0,-1);}
+  else if(k==='OK'){
+    const n=parseInt(buf.focal,10);
+    if(isFinite(n)&&n>=9&&n<=600){
+      if(_focalPadTarget==='mob'){
+        const sl=document.getElementById('mob-sl-focal');
+        if(sl){sl.value=n;onMobSlider();}
+      } else {
+        const sl=document.getElementById('sl-focal');
+        if(sl){sl.value=n;onSlider();}
+      }
+    }
+    closeFocalPad(); return;
+  } else {
+    if(buf.focal.length>=3) return;
+    buf.focal+=k;
+  }
+  _hkFocalUpdateDisp();
+}
+function _hkFocalUpdateDisp(){
+  const el=document.getElementById('focal-pad-disp');
+  if(!el) return;
+  const n=parseInt(_hkBuf.focal,10);
+  const valid=_hkBuf.focal===''||(isFinite(n)&&n>=9&&n<=600);
+  el.textContent=_hkBuf.focal===''?'—':_hkBuf.focal+'mm';
+  el.style.color=valid?'var(--tx)':'#ff6655';
+}
+
 function resetSlider(sliderId, lblId, defaultLabel){
   const sl = document.getElementById(sliderId);
   if(!sl) return;
@@ -1589,6 +1662,8 @@ function onSlider(){
   document.getElementById('lbl-az').textContent    = az+'°';
   document.getElementById('lbl-el').textContent    = (parseFloat(el)>0?'+':'')+el+'°';
   document.getElementById('lbl-focal').textContent = focal+'mm';
+  const fBtn=document.getElementById('lbl-focal-btn');
+  if(fBtn) fBtn.textContent=focal+'mm';
   if(currentTab==='diag') calcCamParams();
   layout();
   drawFovLines();
@@ -2300,6 +2375,8 @@ function onMobSlider(){
   document.getElementById('mob-lbl-az').textContent    = (az>0?'+':'')+az+'°';
   document.getElementById('mob-lbl-el').textContent    = (el>0?'+':'')+el+'°';
   document.getElementById('mob-lbl-focal').textContent = focal+'mm';
+  const mfBtn=document.getElementById('mob-lbl-focal-btn');
+  if(mfBtn) mfBtn.textContent=focal+'mm';
   // PCスライダーと同期
   const slAz    = document.getElementById('sl-az');
   const slEl    = document.getElementById('sl-el');
@@ -2783,6 +2860,29 @@ function init(){
 }
 init();
 </script>
+<!-- 焦点距離キーパッド -->
+<div id="focal-pad-overlay" class="hk-overlay" onclick="closeFocalPad()">
+  <div class="hk-popup" onclick="event.stopPropagation()">
+    <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">焦点距離 (mm)</div>
+    <div id="focal-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
+      <div class="hk-btn" onclick="focalPadInput('7')">7</div>
+      <div class="hk-btn" onclick="focalPadInput('8')">8</div>
+      <div class="hk-btn" onclick="focalPadInput('9')">9</div>
+      <div class="hk-btn" onclick="focalPadInput('4')">4</div>
+      <div class="hk-btn" onclick="focalPadInput('5')">5</div>
+      <div class="hk-btn" onclick="focalPadInput('6')">6</div>
+      <div class="hk-btn" onclick="focalPadInput('1')">1</div>
+      <div class="hk-btn" onclick="focalPadInput('2')">2</div>
+      <div class="hk-btn" onclick="focalPadInput('3')">3</div>
+      <div class="hk-btn hk-del" onclick="focalPadInput('DEL')">⌫</div>
+      <div class="hk-btn" onclick="focalPadInput('0')">0</div>
+      <div class="hk-btn hk-ok" onclick="focalPadInput('OK')">OK</div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">9 〜 600 mm</div>
+  </div>
+</div>
+
 <!-- 三脚高さキーパッド -->
 <div id="tripod-pad-overlay" class="hk-overlay" onclick="closeTripodPad()">
   <div class="hk-popup" onclick="event.stopPropagation()">
