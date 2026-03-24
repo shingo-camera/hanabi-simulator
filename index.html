@@ -212,7 +212,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   #map-mode{gap:3px;white-space:nowrap;}
   .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
-  #mob-drawer{display:block;position:fixed;inset:0;z-index:2000;}
+  #mob-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);
+    z-index:1999;opacity:0;pointer-events:none;transition:opacity .25s;}
+  #mob-overlay.open{opacity:1;pointer-events:auto;}
+  #mob-drawer{display:flex;flex-direction:column;position:fixed;bottom:0;left:0;right:0;
+    height:80vh;background:var(--sur);border-radius:16px 16px 0 0;
+    z-index:2000;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    overflow:hidden;}
+  #mob-drawer.open{transform:translateY(0);}
   #tab-orient .tab-ob{
     background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
     border-radius:4px;padding:3px 10px;cursor:pointer;
@@ -277,14 +284,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 /* スマホ設定ボタン */
 /* ドロワー */
 #mob-drawer{display:none;}
-#mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);}
-#mob-drawer-panel{
-  position:absolute;bottom:0;left:0;right:0;
-  height:80vh;
-  background:var(--sur);border-radius:16px 16px 0 0;
-  display:flex;flex-direction:column;overflow:hidden;
-  transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);}
-#mob-drawer.open #mob-drawer-panel{transform:translateY(0);}
+
 #mob-drawer-header{display:flex;justify-content:space-between;align-items:center;
   padding:10px 14px 8px;border-bottom:1px solid var(--bd);flex-shrink:0;}
 #mob-drawer-inner{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:12px 14px 80px;}
@@ -504,8 +504,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 </div><!-- #wrap -->
 
 <!-- スマホ用ドロワー -->
-<div id="mob-drawer" onclick="closeMobDrawerBg(event)">
-  <div id="mob-drawer-bg"></div>
+<div id="mob-overlay" onclick="closeMobDrawer()"></div>
+<div id="mob-drawer">
   <div id="mob-drawer-panel">
     <div id="mob-drawer-header">
       <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--ac);">⚙ 設定</span>
@@ -2389,16 +2389,14 @@ function closeMobPanel(){
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
   refreshMobDrawerSelects();
-  const d=document.getElementById('mob-drawer');
-  d.classList.add('open');
+  document.getElementById('mob-drawer').classList.add('open');
+  document.getElementById('mob-overlay').classList.add('open');
 }
 function closeMobDrawer(){
-  const d=document.getElementById('mob-drawer');
-  d.classList.remove('open');
+  document.getElementById('mob-drawer').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('open');
 }
-function closeMobDrawerBg(e){
-  if(e.target===document.getElementById('mob-drawer-bg')) closeMobDrawer();
-}
+
 
 function refreshMobDrawerSelects(){
   // 大会
