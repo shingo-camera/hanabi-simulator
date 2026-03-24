@@ -2398,7 +2398,7 @@ function openMobDrawer(){
   refreshMobDrawerSelects();
   const d=document.getElementById('mob-drawer');
   d.style.display='block';
-  requestAnimationFrame(()=>d.classList.add('open'));
+  d.classList.add('open');
 }
 function closeMobDrawer(){
   const d=document.getElementById('mob-drawer');
