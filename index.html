@@ -212,6 +212,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   #map-mode{gap:3px;white-space:nowrap;}
   .mm-btn{font-size:8px;padding:3px 7px;border-radius:10px;}
   #tab-orient{display:flex!important;}
+  #mob-drawer{display:block;position:fixed;inset:0;z-index:2000;}
   #tab-orient .tab-ob{
     background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
     border-radius:4px;padding:3px 10px;cursor:pointer;
@@ -275,7 +276,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* スマホ設定ボタン */
 /* ドロワー */
-#mob-drawer{display:none;position:fixed;inset:0;z-index:2000;}
+#mob-drawer{display:none;}
 #mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);}
 #mob-drawer-panel{
   position:absolute;bottom:0;left:0;right:0;
@@ -283,7 +284,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   background:var(--sur);border-radius:16px 16px 0 0;
   display:flex;flex-direction:column;overflow:hidden;
   transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);}
-#mob-drawer.open{display:block;}
 #mob-drawer.open #mob-drawer-panel{transform:translateY(0);}
 #mob-drawer-header{display:flex;justify-content:space-between;align-items:center;
   padding:10px 14px 8px;border-bottom:1px solid var(--bd);flex-shrink:0;}
@@ -2390,13 +2390,11 @@ function closeMobPanel(){
 function openMobDrawer(){
   refreshMobDrawerSelects();
   const d=document.getElementById('mob-drawer');
-  d.style.display='block';
-  requestAnimationFrame(()=>d.classList.add('open'));
+  d.classList.add('open');
 }
 function closeMobDrawer(){
   const d=document.getElementById('mob-drawer');
   d.classList.remove('open');
-  setTimeout(()=>{ if(!d.classList.contains('open')) d.style.display='none'; },300);
 }
 function closeMobDrawerBg(e){
   if(e.target===document.getElementById('mob-drawer-bg')) closeMobDrawer();
@@ -2994,7 +2992,7 @@ init();
       <button class="hk-btn" onclick="focalPadInput('3')">3</button>
       <button class="hk-btn hk-del" onclick="focalPadInput('DEL')">⌫</button>
       <button class="hk-btn" onclick="focalPadInput('0')">0</button>
-      <button class="hk-btn hk-ok" onclick="alert('OK tapped');focalPadInput('OK')">OK</button>
+      <button class="hk-btn hk-ok" onclick="focalPadInput('OK')">OK</button>
     </div>
     <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">9 〜 1200 mm</div>
   </div>
