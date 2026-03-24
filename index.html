@@ -110,9 +110,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
 
 #sim-body{flex:1;min-height:0;display:flex;overflow:hidden;}
 
-/* スライダーパネル */
-#sliders{width:160px;flex-shrink:0;padding:8px;border-right:1px solid var(--bd);
-  display:flex;flex-direction:column;gap:6px;justify-content:center;}
+/* スライダーパネル（左パネル内） */
+#sliders{display:flex;flex-direction:column;gap:6px;}
 .sl-row{display:flex;flex-direction:column;gap:2px;}
 .sl-row label{font-size:8px;color:var(--sub);display:flex;justify-content:space-between;}
 .sl-row label span{color:var(--ac);font-size:8px;}
@@ -122,7 +121,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   border-radius:50%;background:var(--ac);cursor:pointer;}
 
 /* Canvasエリア */
-#cv-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
+#cv-wrap{flex:1;min-width:0;display:flex;align-items:flex-start;justify-content:flex-start;
   background:#060810;position:relative;overflow:hidden;}
 #cv-clip{overflow:hidden;flex-shrink:0;flex-grow:0;position:relative;
   border:1.5px solid var(--ac);box-sizing:border-box;}
@@ -264,6 +263,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <button class="pb sm" id="btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
     </div>
 
+    <!-- プレビュー操作 -->
+    <div class="sec" style="margin-top:10px;">◎ プレビュー操作</div>
+    <div class="orient-row" style="margin-bottom:6px;">
+      <div class="ob on" id="btn-land" onclick="setCompMode('land')">横</div>
+      <div class="ob" id="btn-port" onclick="setCompMode('port')">縦</div>
+    </div>
+    <div id="sliders">
+      <div class="sl-row">
+        <label>左右方向 <span id="lbl-az">0°</span></label>
+        <input type="range" id="sl-az" min="-60" max="60" value="0" step="1" oninput="onSlider()">
+      </div>
+      <div class="sl-row">
+        <label>上下 <span id="lbl-el">0°</span></label>
+        <input type="range" id="sl-el" min="-60" max="60" value="0" step="1" oninput="onSlider()">
+      </div>
+      <div class="sl-row">
+        <label>焦点距離 <span id="lbl-focal">200mm</span></label>
+        <input type="range" id="sl-focal" min="24" max="800" value="200" step="1" oninput="onSlider()">
+      </div>
+    </div>
+
     <!-- スマホ用閉じるボタン -->
     <div style="margin-top:auto;padding-top:12px;">
       <button class="pb" style="display:none;" id="pnl-close" onclick="closeMobPanel()">✕ 閉じる</button>
@@ -296,42 +316,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <!-- シミュレーターパネル -->
     <div id="sim-panel" style="height:45%;">
       <div id="sim-header">
-        <span class="slabel">大会</span>
-        <select id="sim-sel-festival" onchange="onSimFestivalChange()">
-          <option value="">--</option>
-        </select>
-        <span class="sx">×</span>
-        <span class="slabel">筒場</span>
-        <select id="sim-sel-tube" onchange="renderSim()">
-          <option value="">--</option>
-        </select>
-        <span class="sx">×</span>
-        <span class="slabel">対象</span>
-        <select id="sim-sel-target" onchange="renderSim()">
-          <option value="">--</option>
-        </select>
-        <div style="margin-left:auto;">
-          <div class="orient-row">
-            <div class="ob on" id="btn-land" onclick="setCompMode('land')">横</div>
-            <div class="ob" id="btn-port" onclick="setCompMode('port')">縦</div>
-          </div>
-        </div>
+        <span class="slabel" style="color:var(--sub);">◎ プレビュー</span>
       </div>
       <div id="sim-body">
-        <div id="sliders">
-          <div class="sl-row">
-            <label>左右方向 <span id="lbl-az">0°</span></label>
-            <input type="range" id="sl-az" min="-60" max="60" value="0" step="1" oninput="onSlider()">
-          </div>
-          <div class="sl-row">
-            <label>上下 <span id="lbl-el">0°</span></label>
-            <input type="range" id="sl-el" min="-60" max="60" value="0" step="1" oninput="onSlider()">
-          </div>
-          <div class="sl-row">
-            <label>焦点距離 <span id="lbl-focal">200mm</span></label>
-            <input type="range" id="sl-focal" min="24" max="800" value="200" step="1" oninput="onSlider()">
-          </div>
-        </div>
         <div id="cv-wrap">
           <div id="cv-clip">
             <canvas id="sim-canvas"></canvas>
@@ -698,8 +685,8 @@ async function onViewPick(){
 function updateViewLabel(){
   const lbl = document.getElementById('vmarker-label');
   if(!lbl) return;
-  const fid = document.getElementById('sim-sel-festival').value;
-  const tid = document.getElementById('sim-sel-target').value;
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
 
   const tg = tid ? db.targets.find(x=>x.id===tid) : null;
   const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
@@ -803,7 +790,6 @@ function refreshFestivalSelects(){
   const opts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
   const empty = '<option value="">-- 大会を選択 --</option>';
   document.getElementById('sel-festival').innerHTML = empty + opts;
-  document.getElementById('sim-sel-festival').innerHTML = empty + opts;
   document.getElementById('inp-tube-festival').innerHTML = opts;
   // 編集中の値を復元
   onFestivalChange();
@@ -1028,7 +1014,7 @@ function refreshTargetSelects(){
   const opts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
   const empty = '<option value="">-- 対象物を選択 --</option>';
   document.getElementById('sel-target').innerHTML = empty + opts;
-  document.getElementById('sim-sel-target').innerHTML = empty + opts;
+
 }
 
 // ==================== 地図マーカー更新 ====================
@@ -1112,23 +1098,9 @@ function drawShootingLine(fid, tid){
 
 // ==================== シミュレーター同期 ====================
 function syncSimSelects(){
-  const fid = document.getElementById('sel-festival').value;
-  const tid = document.getElementById('sel-target').value;
-  if(fid){ document.getElementById('sim-sel-festival').value=fid; refreshSimTubeSelect(); }
-  if(tid) document.getElementById('sim-sel-target').value=tid;
+  // 左パネル変更時にシミュレーター・断面図を再描画
   renderSim();
-}
-function onSimFestivalChange(){
-  refreshSimTubeSelect();
-  renderSim();
-}
-function refreshSimTubeSelect(){
-  const fid = document.getElementById('sim-sel-festival').value;
-  const sel = document.getElementById('sim-sel-tube');
-  if(!sel) return;
-  const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
-  sel.innerHTML = '<option value="">全筒場</option>' +
-    tubes.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.nums.join('/')}号)</option>`).join('');
+  renderDiag();
 }
 
 // ==================== スライダー ====================
@@ -1154,8 +1126,8 @@ function renderSim(){
   ctx.fillStyle='#060810';
   ctx.fillRect(0,0,W,H);
 
-  const fid = document.getElementById('sim-sel-festival').value;
-  const tid = document.getElementById('sim-sel-target').value;
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
   if(!fid||!tid){
     ctx.fillStyle='#7a82a0';
     ctx.font='11px Space Mono,monospace';
@@ -1175,8 +1147,8 @@ function renderSim(){
     return;
   }
 
-  // 選択中の筒場（sim-sel-tubeがあれば使う、なければ最初）
-  const selTubeId = (document.getElementById('sim-sel-tube')||{}).value||'';
+  // 選択中の筒場（左パネルのsel-tubeを使う、なければ最初）
+  const selTubeId = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
   const tube = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
 
   // 視点パラメータ
@@ -1503,7 +1475,8 @@ function renderSim(){
   });
 
   // 情報テキスト
-  const fName = (db.festivals.find(f=>f.id===fid)||{}).name||'';
+  const _fidInfo = document.getElementById('sel-festival').value;
+  const fName = (db.festivals.find(f=>f.id===(_fidInfo||fid))||{}).name||'';
   const azInfo = ((camAz%360)+360)%360;
   document.getElementById('sim-info').textContent =
     `方位:${azInfo.toFixed(0)}°  上下:${elOffDeg>0?"+":""}${elOffDeg}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
@@ -1527,8 +1500,8 @@ function renderDiag(){
 
   ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
 
-  const fid = document.getElementById('sim-sel-festival').value;
-  const tid = document.getElementById('sim-sel-target').value;
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
   if(!fid||!tid||!viewManual||viewLat===null){
     ctx.fillStyle='#7a82a0'; ctx.font='8px Space Mono,monospace';
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1539,7 +1512,7 @@ function renderDiag(){
 
   const tg    = db.targets.find(x=>x.id===tid);
   const tubes = db.tubes.filter(t=>t.festivalId===fid);
-  const selTubeId = (document.getElementById('sim-sel-tube')||{}).value||'';
+  const selTubeId = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
   const tube  = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
   if(!tg||!tube) return;
 
@@ -1967,11 +1940,10 @@ function layout(){
   const panelH = simPanel.clientHeight;
   const panelW = simPanel.clientWidth;
   const headerH = document.getElementById('sim-header').offsetHeight||36;
-  const slidersW = document.getElementById('sliders').offsetWidth||160;
   const diagFixedW = 200; // diag-wrap固定幅
 
-  const avH = panelH - headerH;           // sim-body高さ
-  const avW = panelW - slidersW - diagFixedW; // cv-wrap利用可能幅
+  const avH = panelH - headerH;       // sim-body高さ
+  const avW = panelW - diagFixedW;    // cv-wrap利用可能幅（スライダーは左パネルへ移動済み）
 
   // 横構図基準のcanvasサイズ計算（現行ツールと同方式）
   // 利用可能領域に収まる最大3:2サイズ
