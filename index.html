@@ -459,13 +459,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </div>
       <div id="sim-body">
         <div id="cv-wrap">
-          <canvas id="sim-canvas"></canvas>
+          <div id="sim-clip" style="overflow:hidden;flex-shrink:0;flex-grow:0;position:relative;">
+            <div id="sim-inner" style="width:100%;height:100%;transform-origin:center center;">
+              <canvas id="sim-canvas"></canvas>
+            </div>
+          </div>
           <div id="sim-info"></div>
           <div id="view-info" style="position:absolute;bottom:6px;right:8px;font-size:8px;
             line-height:1.6;pointer-events:none;text-align:right;"></div>
         </div>
         <div id="diag-wrap">
-          <canvas id="diag-canvas"></canvas>
+          <div id="diag-clip" style="overflow:hidden;flex-shrink:0;flex-grow:0;position:relative;">
+            <div id="diag-inner" style="width:100%;height:100%;transform-origin:center center;">
+              <canvas id="diag-canvas"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2171,30 +2179,26 @@ function renderDiag(){
   ctx.fillStyle='#e8874a';
   ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
 
-  // ── 花火の高さ水平破線ライン＋ラベル（重なり回避・色分け） ──
+  // ── 花火の高さ水平破線ライン＋ラベル（X方向に並べて重なり回避） ──
   {
-    // 最大:薄、中心:濃、最小:薄 で透明度を変えて視覚的に区別
     const lineItems = [];
     numRows.forEach((row, ni) => {
-      const baseColor = CV_COLORS[ni % CV_COLORS.length];
+      const color   = CV_COLORS[ni % CV_COLORS.length];
       const yCenter = tubeElev + row.height;
       const yTop    = tubeElev + row.height + row.dia/2;
       const yBot    = tubeElev + row.height - row.dia/2;
-      // 最大・中心・最小で色のalphaを変える（中心が最も濃い）
-      lineItems.push({y:yTop,    label:`${row.num}号 最大 ${yTop.toFixed(0)}m`,    color:baseColor, lineAlpha:0.35, lblAlpha:0.55, dash:[1,4], lw:0.5});
-      lineItems.push({y:yCenter, label:`${row.num}号 中心 ${yCenter.toFixed(0)}m`, color:baseColor, lineAlpha:0.75, lblAlpha:0.95, dash:[5,3], lw:0.9});
-      lineItems.push({y:yBot,    label:`${row.num}号 最小 ${yBot.toFixed(0)}m`,    color:baseColor, lineAlpha:0.35, lblAlpha:0.55, dash:[1,4], lw:0.5});
+      // 中心はフルラベル、最大・最小はm数値のみ
+      lineItems.push({y:yTop,    label:`${yTop.toFixed(0)}m`,               color, dash:[3,3], lw:0.7});
+      lineItems.push({y:yCenter, label:`${row.num}号 中心 ${yCenter.toFixed(0)}m`, color, dash:[5,2], lw:0.9});
+      lineItems.push({y:yBot,    label:`${yBot.toFixed(0)}m`,               color, dash:[3,3], lw:0.7});
     });
 
-    // Y座標でソート（上→下）
-    lineItems.sort((a,b) => a.y - b.y).reverse(); // canvas上=Y小=高いm → 上から処理
-
-    // 破線を描画（ラベルより先に）
+    // 破線を先に描画（全て同じ濃さ）
     lineItems.forEach(item => {
       const cy = toCanvasY(item.y);
       if(cy < MT - 2 || cy > H - MB + 2) return;
       ctx.strokeStyle = item.color;
-      ctx.globalAlpha = item.lineAlpha;
+      ctx.globalAlpha = 0.6;
       ctx.lineWidth   = item.lw;
       ctx.setLineDash(item.dash);
       ctx.beginPath();
@@ -2204,56 +2208,50 @@ function renderDiag(){
       ctx.setLineDash([]); ctx.globalAlpha = 1;
     });
 
-    // ラベル配置（重なり回避）
-    // Y座標でソートして上から順に、前ラベルと重なる場合は下にずらす
-    const lblH = fSm + 2; // ラベル1行の高さ
-    const placed = []; // {cy: 実際に描いたY, origCy: 本来のY, item}
-
-    // 上から順（cy小=画面上）に処理
-    const sorted = lineItems
-      .map(item => ({...item, origCy: toCanvasY(item.y)}))
-      .filter(item => item.origCy >= MT - 2 && item.origCy <= H - MB + 2)
-      .sort((a,b) => a.origCy - b.origCy);
-
-    sorted.forEach(item => {
-      let cy = item.origCy;
-      // 既に配置済みのラベルと重なる場合は下にずらす（累積）
-      let changed = true;
-      while(changed){
-        changed = false;
-        for(const p of placed){
-          if(Math.abs(p.cy - cy) < lblH){
-            cy = p.cy + lblH; // 下にずらす
-            changed = true;
-          }
-        }
-      }
-      // 下限チェック
-      cy = Math.min(cy, H - MB - 1);
-      placed.push({cy, origCy: item.origCy, item});
-    });
-
-    // ラベルと引き出し線を描画
+    // ラベルをY高さ順（高い順）にX方向へ並べる
     ctx.font = fSm+'px Space Mono,monospace';
-    ctx.textAlign = 'right';
-    placed.forEach(({cy, origCy, item}) => {
-      // ずれた場合は引き出し線（元のY→ラベルY）
-      if(Math.abs(cy - origCy) > 2){
-        ctx.strokeStyle = item.color;
-        ctx.globalAlpha = item.lblAlpha * 0.4;
-        ctx.lineWidth = 0.5;
-        ctx.setLineDash([1,2]);
-        ctx.beginPath();
-        ctx.moveTo(W - fSm*7 - 4, origCy);
-        ctx.lineTo(W - fSm*7 - 4, cy);
-        ctx.stroke();
-        ctx.setLineDash([]); ctx.globalAlpha = 1;
-      }
-      // ラベル本体
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // 描画範囲内のものだけ取得し高さ順ソート
+    const visible = lineItems
+      .filter(item => {
+        const cy = toCanvasY(item.y);
+        return cy >= MT && cy <= H - MB;
+      })
+      .sort((a,b) => b.y - a.y); // 高い順（y値大→小）
+
+    const pad = 4;  // ラベル間の隙間
+    let curX = ML;  // 現在のX書き込み位置
+    const lblRowH = fSm + 2;
+
+    visible.forEach(item => {
+      const cy   = toCanvasY(item.y);
+      const tw   = ctx.measureText(item.label).width;
+      // 右端を超えたら左に折り返し
+      if(curX + tw + pad > W - 2) curX = ML;
+      const lx = curX;
+      curX += tw + pad + 2;
+
+      // 縦引き出し線（ラベルX中心→破線Y）
+      ctx.strokeStyle = item.color;
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([1,3]);
+      ctx.beginPath();
+      ctx.moveTo(lx + tw/2, cy);
+      ctx.lineTo(lx + tw/2, cy - lblRowH);
+      ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+      // ラベル背景（視認性向上）
+      ctx.fillStyle = 'rgba(6,8,16,0.6)';
+      ctx.fillRect(lx - 1, cy - lblRowH - fSm/2, tw + 2, fSm + 2);
+
+      // ラベルテキスト
       ctx.fillStyle = item.color;
-      ctx.globalAlpha = item.lblAlpha;
-      ctx.textBaseline = 'middle';
-      ctx.fillText(item.label, W - 2, cy);
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(item.label, lx, cy - lblRowH);
       ctx.globalAlpha = 1;
     });
   }
@@ -2600,6 +2598,8 @@ function mobLayout(){
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText=`width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;`;
     canvas.style.border = '1.5px solid var(--ac)';
+    const simClip=document.getElementById('sim-clip');
+    if(simClip){ simClip.style.width=cW+'px'; simClip.style.height=cH+'px'; }
   } else {
     if(cvWrap) cvWrap.style.display='none';
     if(diagWrap && diagCanvas){
@@ -2608,6 +2608,8 @@ function mobLayout(){
       diagWrap.style.height=bodyH+'px';
       diagCanvas.width=W; diagCanvas.height=bodyH;
       diagCanvas.style.cssText=`width:${W}px!important;height:${bodyH}px!important;display:block;background:#060810;`;
+      const diagClipM=document.getElementById('diag-clip');
+      if(diagClipM){ diagClipM.style.width=W+'px'; diagClipM.style.height=bodyH+'px'; }
 
     }
   }
@@ -2932,6 +2934,8 @@ function layout(){
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText = `display:block;width:${cW}px;height:${cH}px;`;
     canvas.style.border = '1.5px solid var(--ac)';
+    const simClipPC=document.getElementById('sim-clip');
+    if(simClipPC){ simClipPC.style.width=cW+'px'; simClipPC.style.height=cH+'px'; }
 
   } else {
     // 横断面図: 全幅
@@ -2943,6 +2947,8 @@ function layout(){
       diagCanvas.width  = rightW;
       diagCanvas.height = bodyH_land;
       diagCanvas.style.cssText = `width:${rightW}px!important;height:${bodyH_land}px!important;display:block;background:#060810;`;
+      const diagClipPC=document.getElementById('diag-clip');
+      if(diagClipPC){ diagClipPC.style.width=rightW+'px'; diagClipPC.style.height=bodyH_land+'px'; }
     }
   }
 
@@ -2989,17 +2995,91 @@ function init(){
   if(drawerPanel){
     let _swipeStartY=null;
     drawerPanel.addEventListener('touchstart',e=>{
-      // スクロールが一番上の時だけスワイプ閉じを受け付ける
       _swipeStartY = e.touches[0].clientY;
     },{passive:true});
     drawerPanel.addEventListener('touchend',e=>{
       if(_swipeStartY===null) return;
       const dy = e.changedTouches[0].clientY - _swipeStartY;
       _swipeStartY = null;
-      // 下方向に60px以上スワイプ、かつパネルがスクロール最上部
       if(dy > 60 && drawerPanel.scrollTop <= 0) closeMobDrawer();
     },{passive:true});
   }
+
+  // ── プレビューcanvas ピンチズーム（ムーンプランナーと同一実装）──
+  // sim-clip/diag-clipごとに独立したズーム状態を持つ
+  function initCanvasPinch(wrapId, innerId, canvasId){
+    const wrap = document.getElementById(wrapId);
+    if(!wrap) return;
+    let pvScale=1, pvTx=0, pvTy=0;
+    let lastDist=null;
+    let panStartX=0, panStartY=0, panBaseTx=0, panBaseTy=0;
+    let isPanning=false;
+    let lastTap=0;
+
+    function clampTranslate(s, tx, ty){
+      const cv=document.getElementById(canvasId);
+      if(!cv) return{tx,ty};
+      const W=cv.width, H=cv.height;
+      const maxTx=(W*(s-1))/2, maxTy=(H*(s-1))/2;
+      return{tx:Math.max(-maxTx,Math.min(maxTx,tx)), ty:Math.max(-maxTy,Math.min(maxTy,ty))};
+    }
+    function applyTransform(){
+      const inner=document.getElementById(innerId);
+      if(!inner) return;
+      const {tx,ty}=clampTranslate(pvScale,pvTx,pvTy);
+      pvTx=tx; pvTy=ty;
+      inner.style.transform=pvScale===1&&pvTx===0&&pvTy===0
+        ?'none':`translate(${pvTx}px,${pvTy}px) scale(${pvScale})`;
+    }
+    function getDist(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+
+    wrap.addEventListener('touchstart',e=>{
+      if(e.touches.length===2){
+        e.preventDefault();
+        lastDist=getDist(e.touches);
+        isPanning=false;
+      } else if(e.touches.length===1&&pvScale>1){
+        isPanning=true;
+        panStartX=e.touches[0].clientX;
+        panStartY=e.touches[0].clientY;
+        panBaseTx=pvTx;
+        panBaseTy=pvTy;
+      }
+    },{passive:false});
+
+    wrap.addEventListener('touchmove',e=>{
+      if(e.touches.length===2&&lastDist!==null){
+        e.preventDefault();
+        const d=getDist(e.touches);
+        pvScale=Math.max(1,Math.min(5,pvScale*(d/lastDist)));
+        lastDist=d;
+        applyTransform();
+      } else if(e.touches.length===1&&isPanning){
+        e.preventDefault();
+        pvTx=panBaseTx+(e.touches[0].clientX-panStartX);
+        pvTy=panBaseTy+(e.touches[0].clientY-panStartY);
+        applyTransform();
+      }
+    },{passive:false});
+
+    wrap.addEventListener('touchend',e=>{
+      if(e.touches.length<2) lastDist=null;
+      if(e.touches.length===0){
+        isPanning=false;
+        const now=Date.now();
+        if(now-lastTap<300){
+          pvScale=1; pvTx=0; pvTy=0;
+          applyTransform();
+          e.preventDefault();
+        }
+        lastTap=now;
+      }
+    },{passive:false});
+  }
+
+  // 正面プレビューと横断面図それぞれに適用
+  initCanvasPinch('sim-clip','sim-inner','sim-canvas');
+  initCanvasPinch('diag-clip','diag-inner','diag-canvas');
 }
 init();
 </script>
