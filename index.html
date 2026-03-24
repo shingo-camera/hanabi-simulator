@@ -469,6 +469,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <button class="pb sm" id="mob-btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
     </div>
 
+    <!-- 視点設定 -->
+    <div class="mob-sec">👁 視点設定</div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:8.5px;color:var(--sub);margin-bottom:4px;">三脚高さ <span id="mob-tripod-disp" style="color:var(--ac);font-size:10px;">150cm</span></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button class="pb sm" onclick="shiftTripod(0,true)">Rst</button>
+        <button class="pb sm" onclick="shiftTripod(-10)">−10</button>
+        <button class="pb sm" onclick="shiftTripod(-5)">−5</button>
+        <button class="pb sm" onclick="shiftTripod(-1)">−1</button>
+        <button class="pb sm" onclick="shiftTripod(1)">+1</button>
+        <button class="pb sm" onclick="shiftTripod(5)">+5</button>
+        <button class="pb sm" onclick="shiftTripod(10)">+10</button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:8.5px;color:var(--sub);margin-bottom:4px;">標高オフセット <span id="mob-elev-offset-disp" style="color:var(--ac);font-size:10px;">0m</span></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button class="pb sm" onclick="shiftElevOffset(0,true)">Rst</button>
+        <button class="pb sm" onclick="shiftElevOffset(-5)">−5</button>
+        <button class="pb sm" onclick="shiftElevOffset(-3)">−3</button>
+        <button class="pb sm" onclick="shiftElevOffset(-1)">−1</button>
+        <button class="pb sm" onclick="shiftElevOffset(1)">+1</button>
+        <button class="pb sm" onclick="shiftElevOffset(3)">+3</button>
+        <button class="pb sm" onclick="shiftElevOffset(5)">+5</button>
+      </div>
+    </div>
+
     <!-- 花火基本設定 -->
     <div class="mob-sec">⚙ 花火基本設定</div>
     <button class="pb sm" style="width:100%;margin-bottom:16px;" onclick="openSettings()">号数テーブルを編集（高さ・開花径）</button>
@@ -846,7 +873,8 @@ function updateViewLabel(){
   }
 
   // 標高
-  parts.push(`E:${viewElev.toFixed(1)}m`);
+  const totalElev = (viewElev||0) + tripodH/100 + elevOffset;
+  parts.push(`E:${totalElev.toFixed(1)}m`);
 
   lbl.textContent = parts.join('  ');
 
@@ -1211,6 +1239,8 @@ let viewLines=[];      // 視点↔筒場ライン
 let fovLines=[];       // 視野角ライン（地図上）
 let viewMarker=null;   // 視点マーカー
 let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
+let tripodH=150;    // 三脚高さ(cm) デフォルト150cm = 1.5m
+let elevOffset=0;   // 標高オフセット(m) デフォルト0
 let gCamAlpha=null, gFovV=null; // 断面図共有：カメラ光軸仰角(deg)・垂直画角(deg)
 let compMode='land'; // 横構図('land') / 縦構図('port')
 
@@ -1345,6 +1375,22 @@ function syncSimSelects(){
 }
 
 // ==================== スライダー ====================
+// ==================== 三脚高さ・標高オフセット ====================
+function shiftTripod(v, reset=false){
+  tripodH = reset ? 150 : Math.max(0, Math.min(500, tripodH+v));
+  const el = document.getElementById('mob-tripod-disp');
+  if(el) el.textContent = tripodH+'cm';
+  renderSim();
+  renderDiag();
+}
+function shiftElevOffset(v, reset=false){
+  elevOffset = reset ? 0 : elevOffset+v;
+  const el = document.getElementById('mob-elev-offset-disp');
+  if(el) el.textContent = (elevOffset>0?'+':'')+elevOffset+'m';
+  renderSim();
+  renderDiag();
+}
+
 function resetSlider(sliderId, lblId, defaultLabel){
   const sl = document.getElementById(sliderId);
   if(!sl) return;
@@ -1435,17 +1481,16 @@ function renderSim(){
   if(viewManual && viewLat!==null){
     simViewLat  = viewLat;
     simViewLng  = viewLng;
-    simViewElev = viewElev||0;
+    simViewElev = (viewElev||0) + tripodH/100 + elevOffset;
   } else {
-    // 視点未設定時：筒場の延長線上にデフォルト配置（500m）
-    const dLat = tube.lat - tg.lat;
-    const dLng = tube.lng - tg.lng;
+    // 視点未設定時：対象物の延長線上にデフォルト配置（1km）
+    const dLat = tg.lat - tube.lat;
+    const dLng = tg.lng - tube.lng;
     const dLen = Math.sqrt(dLat*dLat+dLng*dLng)||1e-9;
     const uLat = dLat/dLen; const uLng = dLng/dLen;
-    const distDeg = 0.5/mPerDeg * mPerDeg / 111000;  // 500m
-    simViewLat  = tube.lat + uLat*(500/111000);
-    simViewLng  = tube.lng + uLng*(500/111000);
-    simViewElev = 0;
+    simViewLat  = tg.lat + uLat*(1000/111000);
+    simViewLng  = tg.lng + uLng*(1000/111000);
+    simViewElev = tripodH/100 + elevOffset;
   }
 
   // 仰角計算（現行ツールのelAng相当、簡易版）
@@ -1456,12 +1501,12 @@ function renderSim(){
     return Math.atan2(objElev-viewElev, distKm*1000)*180/Math.PI;
   }
 
-  // 視点→選択筒場の水平距離・方位
+  // 視点→選択筒場の水平距離
   const distTube = hav(simViewLat,simViewLng,tube.lat,tube.lng);
-  const azTube   = brng(simViewLat,simViewLng,tube.lat,tube.lng); // カメラの基本方位
 
-  // カメラ方位：基本=視点→選択筒場、±azOffDeg
-  const camAz = azTube + azOffDeg;
+  // カメラ方位：基本=視点→対象物（全筒場を均等に映すため）、±azOffDeg
+  const azTg_cam = brng(simViewLat,simViewLng,tg.lat,tg.lng);
+  const camAz = azTg_cam + azOffDeg;
 
   // 仰角オフセット
   const camElOfs = elOffDeg;
