@@ -1364,7 +1364,6 @@ function drawFovLines(){
 function syncSimSelects(){
   // 左パネル変更時にシミュレーター・断面図を再描画
   layout();
-  renderDiag();
 }
 
 // ==================== スライダー ====================
@@ -1432,8 +1431,13 @@ function onSlider(){
 // ==================== シミュレーション描画 ====================
 const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 
-function renderSim(canvas, ctx, W, H){
-  if(!canvas||!ctx||!W||!H) return;
+function renderSim(){
+  const canvas = document.getElementById('sim-canvas');
+  if(!canvas) return;
+  const W = canvas.width||0;
+  const H = canvas.height||0;
+  if(W<10||H<10) return;
+  const ctx = canvas.getContext('2d');
   try {
   // 背景
   ctx.fillStyle='#060810';
@@ -2226,7 +2230,6 @@ function onMobSlider(){
   if(slEl)    slEl.value    = el;
   if(slFocal) slFocal.value = focal;
   layout();
-  renderDiag();
   drawFovLines();
 }
 function resetMobSlider(id, lblId, lblDefault, val='0'){
@@ -2273,7 +2276,6 @@ function mobLayout(){
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText=`width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;`;
     if(cvClip) cvClip.style.cssText=`width:${cW}px;height:${cH}px;overflow:hidden;border:1.5px solid var(--ac);box-sizing:border-box;`;
-    try{ renderSim(canvas, canvas.getContext('2d'), cW, cH); }catch(e){ console.error('renderSim:',e); }
   } else {
     if(cvWrap) cvWrap.style.display='none';
     if(diagWrap && diagCanvas){
@@ -2282,10 +2284,11 @@ function mobLayout(){
       diagWrap.style.height=bodyH+'px';
       diagCanvas.width=W; diagCanvas.height=bodyH;
       diagCanvas.style.cssText=`width:${W}px!important;height:${bodyH}px!important;display:block;background:#060810;`;
-      try{ renderDiag(); }catch(e){ console.error('renderDiag:',e); }
+
     }
   }
   if(map) map.invalidateSize();
+  if(currentTab==='cam') renderSim(); else renderDiag();
 }
 
 // ==================== 地図連携ボタン ====================
@@ -2514,7 +2517,6 @@ function layout(){
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText = `width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
     if(cvClip) cvClip.style.cssText = `width:${cW}px;height:${cH}px;overflow:hidden;flex-shrink:0;flex-grow:0;border:1.5px solid var(--ac);box-sizing:border-box;`;
-    try{ renderSim(canvas, canvas.getContext('2d'), cW, cH); }catch(e){ console.error('renderSim:',e); }
 
   } else {
     // 横断面図: 全幅
@@ -2530,6 +2532,7 @@ function layout(){
   }
 
   if(map) map.invalidateSize();
+  if(currentTab==='cam') renderSim(); else renderDiag();
 }
 
 function onResize(){
