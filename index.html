@@ -207,6 +207,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .hk-sign{background:var(--sur2);border:1px solid var(--ac);color:var(--ac);}
 .hk-sign:active{background:var(--bd);}
 
+#mob-drawer{display:none;}
+
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
   #map-mode{gap:3px;white-space:nowrap;}
@@ -283,7 +285,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* スマホ設定ボタン */
 /* ドロワー */
-#mob-drawer{display:none;}
 
 #mob-drawer-header{display:flex;justify-content:space-between;align-items:center;
   padding:10px 14px 8px;border-bottom:1px solid var(--bd);flex-shrink:0;}
@@ -2388,7 +2389,6 @@ function closeMobPanel(){
 
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
-  alert("openMobDrawer called");
   refreshMobDrawerSelects();
   document.getElementById('mob-drawer').classList.add('open');
   document.getElementById('mob-overlay').classList.add('open');
