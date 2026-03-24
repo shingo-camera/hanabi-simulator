@@ -2395,10 +2395,16 @@ function closeMobPanel(){
 
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
-  refreshMobDrawerSelects();
+  try{
+    refreshMobDrawerSelects();
+  }catch(e){ alert('refresh error: '+e.message); return; }
   const d=document.getElementById('mob-drawer');
+  if(!d){ alert('mob-drawer not found'); return; }
   d.style.display='block';
   d.classList.add('open');
+  const panel=document.getElementById('mob-drawer-panel');
+  const panelTransform=panel?getComputedStyle(panel).transform:'null';
+  alert('drawer display='+d.style.display+' class='+d.className+' panel='+panelTransform);
 }
 function closeMobDrawer(){
   const d=document.getElementById('mob-drawer');
