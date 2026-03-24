@@ -228,11 +228,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <button class="pb sm" id="btn-edit-festival" onclick="openEditFestival()" disabled>✎ 編集</button>
     </div>
 
-    <!-- 筒場リスト -->
+    <!-- 筒場 -->
     <div id="tube-section" style="display:none;">
       <div class="sec">🔴 筒場</div>
-      <div id="tube-list"></div>
-      <button class="pb sm pri" onclick="startAddTube()">＋ 地図で筒場を追加</button>
+      <div class="ig">
+        <select id="sel-tube" onchange="onTubeChange()">
+          <option value="">-- 筒場を選択 --</option>
+        </select>
+      </div>
+      <div class="row2" style="margin-bottom:6px;">
+        <button class="pb sm pri" onclick="startAddTube()">＋ 地図で追加</button>
+        <button class="pb sm" id="btn-edit-tube" onclick="openEditTube()" disabled>✎ 編集</button>
+      </div>
     </div>
 
     <!-- 対象物 -->
@@ -244,8 +251,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </select>
     </div>
     <div class="row2" style="margin-bottom:6px;">
-      <button class="pb sm" onclick="startAddTarget()">＋ 地図で追加</button>
-      <button class="pb sm" id="btn-del-target" onclick="deleteTarget()" disabled>✕ 削除</button>
+      <button class="pb sm pri" onclick="startAddTarget()">＋ 地図で追加</button>
+      <button class="pb sm" id="btn-edit-target" onclick="openEditTarget()" disabled>✎ 編集</button>
     </div>
 
     <!-- スマホ用閉じるボタン -->
@@ -357,7 +364,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 <!-- ===== モーダル: 筒場追加（地図クリック後） ===== -->
 <div class="modal-overlay" id="modal-tube">
   <div class="modal">
-    <h2>🔴 筒場を登録</h2>
+    <h2 id="tube-modal-title">🔴 筒場を登録</h2>
     <div class="mig">
       <label>筒場名</label>
       <input type="text" id="inp-tube-name" placeholder="例：第1筒場・東側">
@@ -366,7 +373,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <label>大会</label>
       <select id="inp-tube-festival"></select>
     </div>
-    <div class="mig">
+    <div class="mig" id="tube-elev-row">
       <label>地面標高</label>
       <div id="tube-elev-disp" style="font-size:10px;color:var(--ac);padding:3px 0;">取得中…</div>
     </div>
@@ -376,7 +383,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     </div>
     <div class="modal-btns">
       <button class="pb" onclick="cancelAddTube()">キャンセル</button>
-      <button class="pb pri" onclick="saveTube()">登録</button>
+      <button class="pb danger" id="btn-tube-delete" onclick="deleteTubeFromModal()" style="display:none;">削除</button>
+      <button class="pb pri" onclick="saveTube()">保存</button>
     </div>
   </div>
 </div>
@@ -384,18 +392,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 <!-- ===== モーダル: 対象物追加（地図クリック後） ===== -->
 <div class="modal-overlay" id="modal-target">
   <div class="modal">
-    <h2>🏢 対象物を登録</h2>
+    <h2 id="target-modal-title">🏢 対象物を登録</h2>
     <div class="mig">
       <label>名前</label>
       <input type="text" id="inp-target-name" placeholder="例：通天閣・○○橋">
     </div>
-    <div class="mig">
+    <div class="mig" id="target-elev-row">
       <label>地面標高</label>
       <div id="target-elev-disp" style="font-size:10px;color:var(--ac2);padding:3px 0;">取得中…</div>
     </div>
     <div class="mig">
-      <label>建物高さ (m)　※地面から頂点まで</label>
+      <label>建物高さ (m)</label>
       <input type="number" id="inp-target-height" placeholder="例：103" min="1" max="2000">
+    </div>
+    <div class="mig">
+      <label>幅 (m)　※縦・横共通</label>
+      <input type="number" id="inp-target-width" placeholder="例：20" min="1" max="5000">
     </div>
     <div class="mig">
       <label>形状</label>
@@ -404,16 +416,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <option value="cylinder">円柱</option>
         <option value="cone">円錐</option>
       </select>
-    </div>
-    <div class="row2">
-      <div class="mig">
-        <label>幅 (m)</label>
-        <input type="number" id="inp-target-width" placeholder="例：20" min="1" max="5000">
-      </div>
-      <div class="mig">
-        <label>奥行 (m)</label>
-        <input type="number" id="inp-target-depth" placeholder="例：20" min="1" max="5000">
-      </div>
     </div>
     <div class="mig">
       <label>建物の向き（正面の向く方角）</label>
@@ -430,7 +432,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     </div>
     <div class="modal-btns">
       <button class="pb" onclick="cancelAddTarget()">キャンセル</button>
-      <button class="pb pri" onclick="saveTarget()">登録</button>
+      <button class="pb danger" id="btn-target-delete" onclick="deleteTargetFromModal()" style="display:none;">削除</button>
+      <button class="pb pri" onclick="saveTarget()">保存</button>
     </div>
   </div>
 </div>
@@ -774,7 +777,7 @@ function onFestivalChange(){
   document.getElementById('btn-edit-festival').disabled = !fid;
   const sec = document.getElementById('tube-section');
   sec.style.display = fid ? 'block' : 'none';
-  renderTubeList();
+  refreshTubeSelect();
   syncSimSelects();
   refreshMapMarkers();
 }
@@ -794,19 +797,20 @@ function startAddTube(){
   setMapMode('tube');
 }
 async function openAddTubeModal(lat,lng){
+  editingTubeId = null;
   pendingTubeLat=lat; pendingTubeLng=lng; pendingTubeElev=0;
+  document.getElementById('tube-modal-title').textContent='🔴 筒場を登録';
   document.getElementById('inp-tube-name').value='';
   document.getElementById('tube-elev-disp').textContent='取得中…';
+  document.getElementById('btn-tube-delete').style.display='none';
   // 大会選択を現在選択中に
   const fid = document.getElementById('sel-festival').value;
   const sel = document.getElementById('inp-tube-festival');
   sel.innerHTML = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
   if(fid) sel.value=fid;
-  // 号数グリッド
   buildNumGrid('tube-num-grid',[]);
   openModal('modal-tube');
   setTimeout(()=>document.getElementById('inp-tube-name').focus(),100);
-  // 標高取得（非同期・モーダル表示後に更新）
   try{ pendingTubeElev = await getElev(lat,lng); }catch(e){ pendingTubeElev=0; }
   document.getElementById('tube-elev-disp').textContent=`${pendingTubeElev.toFixed(1)} m`;
 }
@@ -833,44 +837,80 @@ function cancelAddTube(){
   if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
   setMapMode('none');
 }
+let editingTubeId = null; // 編集中の筒場ID（null=新規）
+
 function saveTube(){
   const name = document.getElementById('inp-tube-name').value.trim()||'筒場';
   const fid  = document.getElementById('inp-tube-festival').value;
   const nums = getCheckedNums('tube-num-grid');
   if(!fid){alert('大会を選択してください');return;}
   if(nums.length===0){alert('号数を1つ以上選択してください');return;}
-  db.tubes.push({id:uid(), festivalId:fid, name, lat:pendingTubeLat, lng:pendingTubeLng, nums, elev:pendingTubeElev});
+  if(editingTubeId){
+    // 編集モード：名前・号数のみ更新（座標・標高は変更しない）
+    const t = db.tubes.find(x=>x.id===editingTubeId);
+    if(t){ t.name=name; t.nums=nums; t.festivalId=fid; }
+  } else {
+    // 新規
+    db.tubes.push({id:uid(), festivalId:fid, name, lat:pendingTubeLat, lng:pendingTubeLng, nums, elev:pendingTubeElev});
+  }
   saveDB();
   closeModal('modal-tube');
-  pendingMarker=null;
-  setMapMode('none');
-  renderTubeList();
+  if(!editingTubeId){ pendingMarker=null; setMapMode('none'); }
+  editingTubeId=null;
+  refreshTubeSelect();
   refreshMapMarkers();
   syncSimSelects();
 }
-function deleteTube(tid){
+function openEditTube(){
+  const tid = document.getElementById('sel-tube').value;
+  if(!tid) return;
+  const t = db.tubes.find(x=>x.id===tid);
+  if(!t) return;
+  editingTubeId = tid;
+  document.getElementById('tube-modal-title').textContent='🔴 筒場を編集';
+  document.getElementById('inp-tube-name').value = t.name;
+  const sel = document.getElementById('inp-tube-festival');
+  sel.innerHTML = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
+  sel.value = t.festivalId;
+  // 標高表示（既存値）
+  document.getElementById('tube-elev-disp').textContent = `${(t.elev||0).toFixed(1)} m`;
+  // 号数チェックボックス
+  buildNumGrid('tube-num-grid', t.nums||[]);
+  // 削除ボタン表示
+  document.getElementById('btn-tube-delete').style.display='inline-block';
+  openModal('modal-tube');
+  setTimeout(()=>document.getElementById('inp-tube-name').focus(),100);
+}
+function deleteTubeFromModal(){
+  if(!editingTubeId) return;
   if(!confirm('この筒場を削除しますか？')) return;
-  db.tubes = db.tubes.filter(t=>t.id!==tid);
+  db.tubes = db.tubes.filter(t=>t.id!==editingTubeId);
   saveDB();
-  renderTubeList();
+  closeModal('modal-tube');
+  editingTubeId=null;
+  refreshTubeSelect();
   refreshMapMarkers();
   renderSim();
 }
-function renderTubeList(){
+function cancelAddTube(){
+  closeModal('modal-tube');
+  if(!editingTubeId && pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
+  editingTubeId=null;
+  setMapMode('none');
+}
+function refreshTubeSelect(){
   const fid = document.getElementById('sel-festival').value;
-  const el = document.getElementById('tube-list');
-  if(!fid){el.innerHTML='';return;}
-  const tubes = db.tubes.filter(t=>t.festivalId===fid);
-  if(tubes.length===0){
-    el.innerHTML='<div class="no-data">筒場なし<br>地図クリックで追加</div>';
-    return;
-  }
-  el.innerHTML = tubes.map(t=>`
-    <div class="tube-item">
-      <span class="ti-name" title="${escH(t.name)}">🔴 ${escH(t.name)}</span>
-      <span class="ti-nums">${t.nums.join('/')}号</span>
-      <span class="ti-del" onclick="deleteTube('${t.id}')">✕</span>
-    </div>`).join('');
+  const sel = document.getElementById('sel-tube');
+  const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- 筒場を選択 --</option>' +
+    tubes.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.nums.join('/')}号)</option>`).join('');
+  if(tubes.find(t=>t.id===prev)) sel.value=prev;
+  onTubeChange();
+}
+function onTubeChange(){
+  const tid = document.getElementById('sel-tube').value;
+  document.getElementById('btn-edit-tube').disabled = !tid;
 }
 
 // ==================== 対象物 ====================
@@ -879,12 +919,14 @@ function startAddTarget(){
 }
 async function openAddTargetModal(lat,lng){
   pendingTargetLat=lat; pendingTargetLng=lng; pendingTargetElev=0;
+  editingTargetId = null;
+  document.getElementById('target-modal-title').textContent='🏢 対象物を登録';
   document.getElementById('inp-target-name').value='';
   document.getElementById('inp-target-height').value='';
   document.getElementById('inp-target-shape').value='box';
   document.getElementById('inp-target-width').value='';
-  document.getElementById('inp-target-depth').value='';
-  document.getElementById('inp-target-frontaz').value='0'; // 北
+  document.getElementById('inp-target-frontaz').value='0';
+  document.getElementById('btn-target-delete').style.display='none';
   document.getElementById('target-elev-disp').textContent='取得中…';
   openModal('modal-target');
   setTimeout(()=>document.getElementById('inp-target-name').focus(),100);
@@ -894,18 +936,31 @@ async function openAddTargetModal(lat,lng){
 }
 function cancelAddTarget(){
   closeModal('modal-target');
-  if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
+  if(!editingTargetId && pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
+  editingTargetId=null;
   setMapMode('none');
 }
 function saveTarget(){
   const name    = document.getElementById('inp-target-name').value.trim();
   const height  = parseFloat(document.getElementById('inp-target-height').value);
-  const shape   = document.getElementById('inp-target-shape').value||'box';
   const width   = parseFloat(document.getElementById('inp-target-width').value)||20;
-  const depth   = parseFloat(document.getElementById('inp-target-depth').value)||width;
+  const depth   = width; // 奥行=幅で統一
+  const shape   = document.getElementById('inp-target-shape').value||'box';
   const frontAz = parseInt(document.getElementById('inp-target-frontaz').value)||0;
   if(!name){alert('名前を入力してください');return;}
   if(!height||height<=0){alert('高さを入力してください');return;}
+  if(editingTargetId){
+    // 編集モード：全フィールド更新（座標・標高は変更しない）
+    const tg = db.targets.find(x=>x.id===editingTargetId);
+    if(tg){ tg.name=name; tg.height=height; tg.width=width; tg.depth=depth; tg.shape=shape; tg.frontAz=frontAz; }
+    saveDB();
+    closeModal('modal-target');
+    editingTargetId=null;
+    refreshTargetSelects();
+    onTargetChange();
+    renderSim();
+    return;
+  }
   db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height, elev:pendingTargetElev, shape, width, depth, frontAz});
   saveDB();
   closeModal('modal-target');
@@ -917,18 +972,38 @@ function saveTarget(){
   document.getElementById('sel-target').value = last.id;
   onTargetChange();
 }
-function deleteTarget(){
-  const tid = document.getElementById('sel-target').value;
-  if(!tid) return;
+let editingTargetId = null; // 編集中の対象物ID（null=新規）
+
+function deleteTargetFromModal(){
+  if(!editingTargetId) return;
   if(!confirm('この対象物を削除しますか？')) return;
-  db.targets = db.targets.filter(t=>t.id!==tid);
+  db.targets = db.targets.filter(t=>t.id!==editingTargetId);
   saveDB();
+  closeModal('modal-target');
+  editingTargetId=null;
   refreshTargetSelects();
   onTargetChange();
 }
+function openEditTarget(){
+  const tid = document.getElementById('sel-target').value;
+  if(!tid) return;
+  const tg = db.targets.find(x=>x.id===tid);
+  if(!tg) return;
+  editingTargetId = tid;
+  document.getElementById('target-modal-title').textContent='🏢 対象物を編集';
+  document.getElementById('inp-target-name').value = tg.name;
+  document.getElementById('inp-target-height').value = tg.height||'';
+  document.getElementById('inp-target-width').value = tg.width||tg.depth||'';
+  document.getElementById('inp-target-shape').value = tg.shape||'box';
+  document.getElementById('inp-target-frontaz').value = String(tg.frontAz||0);
+  document.getElementById('target-elev-disp').textContent = `${(tg.elev||0).toFixed(1)} m`;
+  document.getElementById('btn-target-delete').style.display='inline-block';
+  openModal('modal-target');
+  setTimeout(()=>document.getElementById('inp-target-name').focus(),100);
+}
 function onTargetChange(){
   const tid = document.getElementById('sel-target').value;
-  document.getElementById('btn-del-target').disabled = !tid;
+  document.getElementById('btn-edit-target').disabled = !tid;
   syncSimSelects();
   refreshMapMarkers();
 }
@@ -978,6 +1053,18 @@ let viewMarker=null;   // 視点マーカー
 let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
 let gCamAlpha=null, gFovV=null; // 断面図共有：カメラ光軸仰角(deg)・垂直画角(deg)
 
+// 球面上でlat,lngからaz方向にdistKm進んだ座標を返す
+function destPoint(lat, lng, azDeg, distKm){
+  const R = 6371;
+  const az = azDeg * Math.PI/180;
+  const latR = lat * Math.PI/180;
+  const dR = distKm / R;
+  const lat2 = Math.asin(Math.sin(latR)*Math.cos(dR) + Math.cos(latR)*Math.sin(dR)*Math.cos(az));
+  const lng2 = lng + Math.atan2(Math.sin(az)*Math.sin(dR)*Math.cos(latR),
+                                 Math.cos(dR)-Math.sin(latR)*Math.sin(lat2))*180/Math.PI;
+  return [lat2*180/Math.PI, lng2];
+}
+
 function drawShootingLine(fid, tid){
   // 既存ライン全削除
   shootingLines.forEach(l=>map.removeLayer(l));
@@ -987,16 +1074,15 @@ function drawShootingLine(fid, tid){
   if(!tg) return;
   const tubes = db.tubes.filter(t=>t.festivalId===fid);
   if(tubes.length===0) return;
+  const EXT_KM = 60; // 両端60km延長
   tubes.forEach(tube=>{
-    const dLat = tg.lat - tube.lat;
-    const dLng = tg.lng - tube.lng;
-    // 筒場側へ2倍延長、対象物側へ3倍延長（撮影推奨ライン）
-    const extFar = 3;
-    const extNear = 2;
-    const fromLat = tube.lat - dLat * extNear;
-    const fromLng = tube.lng - dLng * extNear;
-    const toLat = tg.lat + dLat * extFar;
-    const toLng = tg.lng + dLng * extFar;
+    // 筒場→対象の方位角
+    const azFwd = brng(tube.lat, tube.lng, tg.lat, tg.lng);
+    const azBwd = (azFwd + 180) % 360;
+    // 筒場側を60km後方へ延長
+    const [fromLat, fromLng] = destPoint(tube.lat, tube.lng, azBwd, EXT_KM);
+    // 対象側を60km前方へ延長
+    const [toLat, toLng] = destPoint(tg.lat, tg.lng, azFwd, EXT_KM);
     const coords = [[fromLat,fromLng],[tube.lat,tube.lng],[tg.lat,tg.lng],[toLat,toLng]];
     // 下線（黒・太め）
     const under = L.polyline(coords,{color:'#000000',weight:4,opacity:0.5,dashArray:'6,4'}).addTo(map);
@@ -1852,7 +1938,7 @@ function init(){
   initMap();
   refreshFestivalSelects();
   refreshTargetSelects();
-  renderTubeList();
+  refreshTubeSelect();
   onSlider();
   renderSim();
   renderDiag();
