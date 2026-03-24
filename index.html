@@ -368,9 +368,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </div>
       <div id="sim-body">
         <div id="cv-wrap">
-          <div id="cv-clip">
-            <canvas id="sim-canvas"></canvas>
-          </div>
+          <canvas id="sim-canvas"></canvas>
           <div id="sim-info"></div>
           <div id="view-info" style="position:absolute;bottom:6px;right:8px;font-size:8px;
             line-height:1.6;pointer-events:none;text-align:right;"></div>
@@ -1920,7 +1918,7 @@ function mobLayout(){
     if(cH > bodyH){ cH = bodyH; cW = Math.round(cH * 3/2); }
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText=`width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;`;
-    if(cvClip) cvClip.style.cssText=`width:${cW}px;height:${cH}px;overflow:hidden;border:1.5px solid var(--ac);box-sizing:border-box;`;
+    canvas.style.border = '1.5px solid var(--ac)';
   } else {
     if(cvWrap) cvWrap.style.display='none';
     if(diagWrap && diagCanvas){
@@ -2161,7 +2159,7 @@ function layout(){
     }
     canvas.width = cW; canvas.height = cH;
     canvas.style.cssText = `width:${cW}px!important;height:${cH}px!important;display:block;background:#060810;flex-shrink:0;flex-grow:0;`;
-    if(cvClip) cvClip.style.cssText = `width:${cW}px;height:${cH}px;overflow:hidden;flex-shrink:0;flex-grow:0;border:1.5px solid var(--ac);box-sizing:border-box;`;
+    canvas.style.border = '1.5px solid var(--ac)';
 
   } else {
     // 横断面図: 全幅
