@@ -207,7 +207,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .hk-sign{background:var(--sur2);border:1px solid var(--ac);color:var(--ac);}
 .hk-sign:active{background:var(--bd);}
 
-#mob-drawer{display:none;position:fixed;inset:0;z-index:2000;}
+#mob-drawer{display:none;position:fixed;inset:0;z-index:9950;}
 #mob-settings-btn{display:none;padding:4px 8px;background:var(--sur);border-top:1px solid var(--bd);flex-shrink:0;}
 
 #mob-bar{display:none;}
@@ -2499,18 +2499,17 @@ function mobLayout(){
 
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const tabH     = tabBar ? tabBar.offsetHeight||30 : 30;
-  const isPort   = compMode==='port';
-  const mobBarH  = 96;
-  // ムーンプランナーと同方式: wrap{bottom:mob-bar}なのでavH=window.innerHeight-mobBarH
-  const avH      = H - mobBarH;
+  const tabH    = tabBar ? tabBar.offsetHeight||30 : 30;
+  const isPort  = compMode==='port';
+  const mobBarH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--mob-bar'))||104;
+  const avH     = H - mobBarH;
+  // ムーンプランナーと完全同一の計算
   const pvH_land = Math.round(avH * 0.45);
-  const bodyH_land = pvH_land - tabH;
-  const cvH_land = bodyH_land;
-  const cvW_land_full = Math.round(cvH_land * 3/2);
-  const maxCvW = Math.round(W * 0.9);
-  const cvW_land = Math.min(cvW_land_full, maxCvW);
-  const cvHfinal_land = cvW_land === cvW_land_full ? cvH_land : Math.round(cvW_land * 2/3);
+  const cvH_land = pvH_land - tabH;
+  const cvWbyAspect_land = Math.round(cvH_land * 3/2);
+  const maxCvW = Math.round(W * 0.75);
+  const cvW_land = Math.min(cvWbyAspect_land, maxCvW);
+  const cvHfinal_land = cvW_land === cvWbyAspect_land ? cvH_land : Math.round(cvW_land * 2/3);
   const cvW_port = cvHfinal_land;
   const cvH_port = cvW_land;
   const pvH = isPort ? cvH_port + tabH : pvH_land;
