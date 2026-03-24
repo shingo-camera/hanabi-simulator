@@ -1117,9 +1117,13 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
   if(!canvas) return;
-  // layout()が設定したwidht/heightをそのまま使う（上書きしない）
-  const W = canvas.width||400;
-  const H = canvas.height||200;
+  // layout()がサイズを設定していなければ先にlayout()を呼ぶ
+  if(!canvas.width || canvas.width===0){
+    layout();
+    return; // layout()末尾でrenderSim()が呼ばれる
+  }
+  const W = canvas.width;
+  const H = canvas.height;
   if(W===0||H===0) return;
   const ctx = canvas.getContext('2d');
 
@@ -1493,9 +1497,9 @@ function renderSim(){
 function renderDiag(){
   const canvas= document.getElementById('diag-canvas');
   if(!canvas) return;
-  // layout()が設定したwidth/heightをそのまま使う（上書きしない）
-  const W = canvas.width||200;
-  const H = canvas.height||200;
+  if(!canvas.width || canvas.width===0) return; // layout()待ち
+  const W = canvas.width;
+  const H = canvas.height;
   if(W===0||H===0) return;
   const ctx = canvas.getContext('2d');
 
@@ -1640,12 +1644,12 @@ function renderDiag(){
     ctx.setLineDash([2,3]);
     ctx.beginPath(); ctx.moveTo(tbCX, toCanvasY(tubeElev)); ctx.lineTo(tbCX, fwCY); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha=1;
-    // 開花径：点線円（X方向とY方向でスケールが異なるため楕円で描画）
-    const radXpx = Math.abs(toCanvasX(xTube + row.dia/2) - toCanvasX(xTube));
+    // 開花径：点線正円（縦方向のスケールを正として半径計算）
     const radYpx = Math.abs(toCanvasY(tubeElev + row.height - row.dia/2) - toCanvasY(tubeElev + row.height));
+    const radPx  = Math.max(3, radYpx);
     ctx.strokeStyle=color; ctx.globalAlpha=0.7; ctx.lineWidth=1.2;
     ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.ellipse(tbCX, fwCY, radXpx, radYpx, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(tbCX, fwCY, radPx, 0, Math.PI*2); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha=1;
     // 中心点
     ctx.fillStyle=color;
