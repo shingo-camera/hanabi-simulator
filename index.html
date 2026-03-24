@@ -1116,10 +1116,11 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
-  const wrap   = document.getElementById('cv-wrap');
-  const W = wrap.clientWidth||400;
-  const H = wrap.clientHeight||200;
-  canvas.width=W; canvas.height=H;
+  if(!canvas) return;
+  // layout()が設定したwidht/heightをそのまま使う（上書きしない）
+  const W = canvas.width||400;
+  const H = canvas.height||200;
+  if(W===0||H===0) return;
   const ctx = canvas.getContext('2d');
 
   // 背景
@@ -1490,12 +1491,12 @@ function renderSim(){
 
 // ==================== 断面図 ====================
 function renderDiag(){
-  const wrap  = document.getElementById('diag-wrap');
   const canvas= document.getElementById('diag-canvas');
-  if(!wrap||!canvas) return;
-  const W = wrap.clientWidth||200;
-  const H = wrap.clientHeight||200;
-  canvas.width=W; canvas.height=H;
+  if(!canvas) return;
+  // layout()が設定したwidth/heightをそのまま使う（上書きしない）
+  const W = canvas.width||200;
+  const H = canvas.height||200;
+  if(W===0||H===0) return;
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
@@ -1540,9 +1541,13 @@ function renderDiag(){
   // 各号数の花火頂点高さ
   const numRows = tube.nums.map(n=>db.numTable.find(r=>r.num===n)).filter(Boolean);
 
-  // 全ポイントのx・yからスケール計算
-  const allX = [0, xTube, xTg];
-  const allY = [simViewElev, tubeElev, tubeElev + Math.max(...numRows.map(r=>r.height),0),
+  // 全ポイントのx・yからスケール計算（開花半径を含める）
+  const maxDiaHalf = Math.max(...numRows.map(r=>r.dia/2), 0);
+  const allX = [0, xTube - maxDiaHalf, xTube + maxDiaHalf, xTg];
+  const allY = [simViewElev,
+                tubeElev,
+                tubeElev + Math.max(...numRows.map(r=>r.height + r.dia/2), 0),
+                tubeElev + Math.max(...numRows.map(r=>r.height - r.dia/2), 0),
                 tgElev, tgElev + tg.height];
   const xMin = Math.min(...allX); const xMax = Math.max(...allX);
   const yMin = Math.min(...allY); const yMax = Math.max(...allY);
@@ -1554,12 +1559,14 @@ function renderDiag(){
 
   const xRange = (xMax - xMin)||1;
   const yRange = (yMax - yMin)||1;
-  // y軸は少し余白
+  // 余白（開花円が端に掛からないよう）
+  const xPad = xRange * 0.08;
   const yPad = yRange * 0.15;
+  const xLo = xMin - xPad; const xHi = xMax + xPad;
   const yLo = yMin - yPad;
   const yHi = yMax + yPad;
 
-  function toCanvasX(xm){ return ML + (xm - xMin) / xRange * PW; }
+  function toCanvasX(xm){ return ML + (xm - xLo) / (xHi - xLo) * PW; }
   function toCanvasY(ym){ return MT + PH - (ym - yLo) / (yHi - yLo) * PH; }
 
   // ── グリッド ──
@@ -1624,25 +1631,29 @@ function renderDiag(){
 
   // ── 筒場＋花火 ──
   const tbCX = toCanvasX(xTube);
-  // 地面マーカー
-  ctx.fillStyle='#e8874a';
-  ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
-  // 各号数の花火頂点
+  // 各号数：軌跡＋開花径点線円
   numRows.forEach((row,ni)=>{
     const fwCY = toCanvasY(tubeElev + row.height);
     const color = CV_COLORS[ni % CV_COLORS.length];
-    // 縦の軌跡線
-    ctx.strokeStyle=color; ctx.globalAlpha=0.4; ctx.lineWidth=1;
+    // 上昇軌跡（点線）
+    ctx.strokeStyle=color; ctx.globalAlpha=0.35; ctx.lineWidth=0.8;
     ctx.setLineDash([2,3]);
     ctx.beginPath(); ctx.moveTo(tbCX, toCanvasY(tubeElev)); ctx.lineTo(tbCX, fwCY); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha=1;
-    // 開花点（横線で幅表現）
-    const radPx = Math.max(2, toCanvasX(row.dia/2) - toCanvasX(0));
-    ctx.strokeStyle=color; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.moveTo(tbCX-radPx, fwCY); ctx.lineTo(tbCX+radPx, fwCY); ctx.stroke();
+    // 開花径：点線円（X方向とY方向でスケールが異なるため楕円で描画）
+    const radXpx = Math.abs(toCanvasX(xTube + row.dia/2) - toCanvasX(xTube));
+    const radYpx = Math.abs(toCanvasY(tubeElev + row.height - row.dia/2) - toCanvasY(tubeElev + row.height));
+    ctx.strokeStyle=color; ctx.globalAlpha=0.7; ctx.lineWidth=1.2;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.ellipse(tbCX, fwCY, radXpx, radYpx, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+    // 中心点
     ctx.fillStyle=color;
     ctx.beginPath(); ctx.arc(tbCX, fwCY, 2.5, 0, Math.PI*2); ctx.fill();
   });
+  // 地面マーカー（花火の後に描いて上に重なるように）
+  ctx.fillStyle='#e8874a';
+  ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
 
   // ── 視点マーカー ──
   const vpCX = toCanvasX(0);
