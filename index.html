@@ -1434,13 +1434,7 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
-  if(!canvas) return;
-  // canvasサイズ未設定なら同期でlayout()を呼んでサイズを確定させる
-  if(!canvas.width || canvas.width===0){
-    layout();
-    // layout()内でrenderSim()が呼ばれるので終了
-    return;
-  }
+  if(!canvas||!canvas.width||canvas.width===0) return;
   const W = canvas.width;
   const H = canvas.height;
   if(W===0||H===0) return;
@@ -1449,6 +1443,13 @@ function renderSim(){
   // 背景
   ctx.fillStyle='#060810';
   ctx.fillRect(0,0,W,H);
+  // デバッグ：canvasが生きていることを確認
+  ctx.fillStyle='rgba(255,255,0,0.3)';
+  ctx.fillRect(0,0,W,20);
+  ctx.fillStyle='#fff';
+  ctx.font='11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText(`W=${W} H=${H}`,4,14);
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
@@ -2295,7 +2296,10 @@ function mobLayout(){
     }
   }
   if(map) map.invalidateSize();
-  if(isCam) renderSim(); else renderDiag();
+  const _isCam = isCam;
+  requestAnimationFrame(()=>{
+    if(_isCam) renderSim(); else renderDiag();
+  });
 }
 
 // ==================== 地図連携ボタン ====================
@@ -2543,8 +2547,11 @@ function layout(){
   }
 
   if(map) map.invalidateSize();
-  // canvas.widthが確定した直後に同期で描画
-  if(currentTab==='cam') renderSim(); else renderDiag();
+  // 次フレームで描画（layout中のcanvas.width設定がDOMに反映されてから）
+  const _tab = currentTab;
+  requestAnimationFrame(()=>{
+    if(_tab==='cam') renderSim(); else renderDiag();
+  });
 }
 
 function onResize(){
