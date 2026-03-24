@@ -1439,20 +1439,183 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
-  if(!canvas){ console.error('no canvas'); return; }
-  console.log('renderSim: W='+canvas.width+' H='+canvas.height+' display='+canvas.style.display);
+  if(!canvas) return;
   const W = canvas.width||0;
   const H = canvas.height||0;
-  if(W<10||H<10){ console.error('canvas too small',W,H); return; }
+  if(W<10||H<10) return;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle='#1a0a2e';
+
+  // 背景
+  ctx.fillStyle='#060810';
   ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#ffff00';
-  ctx.font='bold 20px monospace';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.fillText('OK '+W+'x'+H, W/2, H/2);
-  console.log('renderSim: drew OK');
+
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-target').value;
+  if(!fid||!tid){
+    document.getElementById('sim-info').textContent='';
+    return;
+  }
+
+  const tg    = db.targets.find(x=>x.id===tid);
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  if(!tg||tubes.length===0){
+    ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
+    return;
+  }
+
+  // スライダー値
+  const isMobLayout = detectMobile();
+  const focal    = isMobLayout ? getMobFocal() : parseFloat(document.getElementById('sl-focal').value)||50;
+  const azOffDeg = isMobLayout ? getMobAz()    : parseFloat(document.getElementById('sl-az').value)||0;
+  const elOffDeg = isMobLayout ? getMobEl()    : parseFloat(document.getElementById('sl-el').value)||0;
+
+  // センサー・画角
+  const sensorW = compMode==='land' ? 36 : 24;
+  const sensorH = compMode==='land' ? 24 : 36;
+  const fovH = 2*Math.atan(sensorW/(2*focal));
+  const fovV = 2*Math.atan(sensorH/(2*focal));
+
+  // 1度≈111km
+  const mPerDeg = 111000;
+
+  // 選択中の筒場
+  const selTubeId = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+  const tube = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
+
+  // 視点座標
+  const cLat = tubes.reduce((s,t)=>s+t.lat,0)/tubes.length;
+  const cLng = tubes.reduce((s,t)=>s+t.lng,0)/tubes.length;
+  const dLat = cLat - tg.lat; const dLng = cLng - tg.lng;
+  const dLen = Math.sqrt(dLat*dLat+dLng*dLng)||1e-9;
+  const uLat = -dLat/dLen; const uLng = -dLng/dLen;
+
+  let simViewLat, simViewLng, simViewElev;
+  if(viewManual && viewLat!==null && viewLng!==null){
+    simViewLat = viewLat; simViewLng = viewLng;
+    simViewElev = (viewElev||0) + tripodH/100 + elevOffset;
+  } else {
+    // デフォルト：対象の延長線上1km
+    simViewLat = tg.lat + uLat*(1000/mPerDeg);
+    simViewLng = tg.lng + uLng*(1000/mPerDeg);
+    simViewElev = tripodH/100 + elevOffset;
+  }
+
+  // 透視投影（gnomonic方式）
+  function toScreen(objLat, objLng, objAlt){
+    const dx = (objLng - simViewLng)*mPerDeg*Math.cos(tg.lat*Math.PI/180);
+    const dz = (objLat - simViewLat)*mPerDeg;
+    const dy = objAlt - simViewElev;
+
+    // カメラ基本方位：視点→対象物
+    const baseAz = Math.atan2(
+      (tg.lng-simViewLng)*Math.cos(tg.lat*Math.PI/180),
+      tg.lat-simViewLat
+    );
+    const az = baseAz + azOffDeg*Math.PI/180;
+    const el = elOffDeg*Math.PI/180;
+
+    const cosAz=Math.cos(az), sinAz=Math.sin(az);
+    const cosEl=Math.cos(el), sinEl=Math.sin(el);
+    const cx= sinAz*cosEl, cy=sinEl, cz=cosAz*cosEl;
+    const rx=cosAz, ry=0, rz=-sinAz;
+    const ux=cz*ry-cy*rz, uy=cx*rz-cz*rx, uz=cy*rx-cx*ry;
+
+    const depth = dx*cx+dy*cy+dz*cz;
+    if(depth<=0) return null;
+    const right = dx*rx+dy*ry+dz*rz;
+    const up    = dx*ux+dy*uy+dz*uz;
+
+    const normX = right/depth * (focal/(sensorW/2));
+    const normY = up/depth    * (focal/(sensorH/2));
+    return { sx:W/2+normX*(W/2), sy:H/2-normY*(H/2), depth };
+  }
+
+  // 地平線
+  const horizon = toScreen(tg.lat+0.01, tg.lng, simViewElev);
+  const hY = horizon ? Math.min(Math.max(horizon.sy,H*0.2),H*0.85) : H*0.65;
+
+  // 空グラデーション
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#060810'); grad.addColorStop(1,'#0d1020');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+
+  // 地面
+  ctx.fillStyle='#0a0e1a'; ctx.fillRect(0,hY,W,H-hY);
+  ctx.strokeStyle='rgba(200,169,110,0.4)'; ctx.lineWidth=1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(0,hY); ctx.lineTo(W,hY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 対象物（矩形シルエット）
+  const tgElev = tg.elev||0;
+  const tgBase = toScreen(tg.lat, tg.lng, tgElev);
+  const tgTop  = toScreen(tg.lat, tg.lng, tgElev+tg.height);
+  if(tgBase&&tgTop){
+    const bw = Math.max(6, Math.abs(tgBase.sx-tgTop.sx)*0.5+10);
+    const bx = tgTop.sx - bw/2;
+    const bh = tgBase.sy - tgTop.sy;
+    if(bh>1){
+      ctx.fillStyle='rgba(126,184,232,0.2)';
+      ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.5;
+      ctx.fillRect(bx,tgTop.sy,bw,bh);
+      ctx.strokeRect(bx,tgTop.sy,bw,bh);
+      ctx.fillStyle='rgba(126,184,232,0.85)';
+      ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
+      ctx.fillText(tg.name+' '+(tgElev+tg.height).toFixed(0)+'m', tgTop.sx, tgTop.sy-5);
+    }
+  }
+
+  // 各筒場の花火
+  const CV_COLORS2=['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
+  tubes.forEach((tb,ti)=>{
+    const isSelected = (tb.id === tube.id);
+    const color = CV_COLORS2[ti % CV_COLORS2.length];
+    const tbElev = tb.elev||0;
+    tb.nums.forEach((numStr,ni)=>{
+      const row = db.numTable.find(r=>r.num===numStr);
+      if(!row) return;
+      const fw = toScreen(tb.lat, tb.lng, tbElev+row.height);
+      if(!fw) return;
+      const radiusPx = Math.max(3, (row.dia/2/fw.depth)*(focal/(sensorW/2))*(W/2));
+      const alpha = isSelected ? 0.9 : 0.3;
+      ctx.globalAlpha = alpha;
+      // 放射状
+      const rays=16, innerR=radiusPx*0.15;
+      ctx.strokeStyle=color; ctx.lineWidth=isSelected?1.5:0.8;
+      for(let i=0;i<rays;i++){
+        const ang=(i/rays)*Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(fw.sx+Math.cos(ang)*innerR, fw.sy+Math.sin(ang)*innerR);
+        ctx.lineTo(fw.sx+Math.cos(ang)*radiusPx, fw.sy+Math.sin(ang)*radiusPx);
+        ctx.stroke();
+      }
+      // 外円
+      ctx.globalAlpha=alpha*0.3; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.arc(fw.sx,fw.sy,radiusPx,0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1;
+      // ラベル（選択中のみ）
+      if(isSelected){
+        ctx.fillStyle=color; ctx.globalAlpha=0.9;
+        ctx.font='8px Space Mono,monospace'; ctx.textAlign='left';
+        ctx.fillText(tb.name+' '+numStr+'号', fw.sx+radiusPx+3, fw.sy-2);
+        ctx.globalAlpha=1;
+      }
+    });
+  });
+
+  // gCamAlpha/gFovVを設定（横断面図の画角ラインに共有）
+  {
+    const distTg = hav(simViewLat,simViewLng,tg.lat,tg.lng)||0.001;
+    gCamAlpha = Math.atan2((tg.elev||0)+tg.height-simViewElev, distTg*1000)*180/Math.PI + elOffDeg;
+    gFovV = 2*Math.atan(sensorH/(2*focal))*180/Math.PI;
+  }
+
+  // 情報表示
+  const fName=(db.festivals.find(f=>f.id===fid)||{}).name||'';
+  const info = document.getElementById('sim-info');
+  if(info) info.textContent=`f:${focal}mm  方位:${azOffDeg>0?'+':''}${azOffDeg}°  上下:${elOffDeg>0?'+':''}${elOffDeg}°  ${fName}×${tg.name}`;
+  const tabInfo = document.getElementById('sim-tab-info');
+  if(tabInfo) tabInfo.textContent=`f:${focal}mm  ${fName}×${tg.name}`;
 }
 
 
@@ -1631,9 +1794,18 @@ function renderDiag(){
   ctx.beginPath(); ctx.arc(vpCX, vpCY, 4, 0, Math.PI*2); ctx.stroke();
 
   // ── 画角ライン（焦点距離＋上下スライダーから計算） ──
-  if(gCamAlpha !== null && gFovV !== null){
-    const camAlphaDeg = gCamAlpha;   // 光軸仰角(deg)
-    const halfFovV    = gFovV / 2;   // 垂直画角の半分(deg)
+  {
+    // renderDiag内で直接計算（renderSimに依存しない）
+    const isMobD = detectMobile();
+    const focalD = isMobD ? getMobFocal() : parseFloat(document.getElementById('sl-focal').value)||50;
+    const elOffD = isMobD ? getMobEl()    : parseFloat(document.getElementById('sl-el').value)||0;
+    // 垂直画角（compModeで縦横切替）
+    const sensorVD = compMode==='land' ? 24 : 36;
+    const fovV_d  = 2*Math.atan(sensorVD/(2*focalD))*180/Math.PI;
+    // 光軸仰角：視点→対象頂点の仰角＋上下オフセット
+    const distTgD = hav(simViewLat, simViewLng, tg.lat, tg.lng)||0.001;
+    const camAlphaDeg = Math.atan2((tg.elev||0)+tg.height - simViewElev, distTgD*1000)*180/Math.PI + elOffD;
+    const halfFovV    = fovV_d / 2;   // 垂直画角の半分(deg)
     const vaUpper = camAlphaDeg + halfFovV;  // 上端仰角
     const vaLower = camAlphaDeg - halfFovV;  // 下端仰角
 
