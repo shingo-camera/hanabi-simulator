@@ -675,6 +675,9 @@ async function onViewPick(){
   viewElev = 0;
   try{ viewElev = await getElev(viewLat, viewLng); }catch(e){}
 
+  // 視点↔筒場ライン描画
+  drawViewLines();
+
   // ラベル更新（筒場・対象それぞれの距離を表示）
   updateViewLabel();
 
@@ -1023,6 +1026,8 @@ function refreshMapMarkers(){
   tubeMarkers.forEach(m=>map.removeLayer(m));
   tubeMarkers=[];
   if(targetMarker){map.removeLayer(targetMarker);targetMarker=null;}
+  // 視点ラインも再描画
+  drawViewLines();
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
@@ -1052,6 +1057,7 @@ function refreshMapMarkers(){
 }
 
 let shootingLines=[];  // 配列で管理（複数筒場×下線+上線）
+let viewLines=[];      // 視点↔筒場ライン
 let viewMarker=null;   // 視点マーカー
 let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
 let gCamAlpha=null, gFovV=null; // 断面図共有：カメラ光軸仰角(deg)・垂直画角(deg)
@@ -1093,6 +1099,27 @@ function drawShootingLine(fid, tid){
     // 上線（アクセントカラー・細め）
     const over  = L.polyline(coords,{color:'#e8874a',weight:2,opacity:0.9,dashArray:'6,4'}).addTo(map);
     shootingLines.push(under, over);
+  });
+}
+
+function drawViewLines(){  // 既存削除
+  viewLines.forEach(l=>map.removeLayer(l));
+  viewLines=[];
+  if(viewLat===null||viewLng===null) return;
+  const fid = document.getElementById('sel-festival').value;
+  if(!fid) return;
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  if(tubes.length===0) return;
+  const EXT_KM = 50;
+  tubes.forEach(tube=>{
+    const azFwd = brng(viewLat, viewLng, tube.lat, tube.lng);
+    const azBwd = (azFwd + 180) % 360;
+    const [fromLat, fromLng] = destPoint(viewLat, viewLng, azBwd, EXT_KM);
+    const [toLat, toLng]     = destPoint(tube.lat, tube.lng, azFwd, EXT_KM);
+    const coords = [[fromLat,fromLng],[viewLat,viewLng],[tube.lat,tube.lng],[toLat,toLng]];
+    const under = L.polyline(coords,{color:'#000000',weight:4,opacity:0.5,dashArray:'6,4'}).addTo(map);
+    const over  = L.polyline(coords,{color:'#7eb8e8',weight:2,opacity:0.9,dashArray:'6,4'}).addTo(map);
+    viewLines.push(under, over);
   });
 }
 
