@@ -130,6 +130,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 #sim-info{position:absolute;bottom:6px;left:8px;font-size:8px;color:var(--sub);
   line-height:1.6;pointer-events:none;}
 
+/* 断面図エリア */
+#diag-wrap{width:200px;flex-shrink:0;background:#060810;border-left:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;}
+#diag-canvas{display:block;}
+
 /* モーダル共通 */
 .modal-overlay{display:none;position:fixed;inset:0;z-index:2000;
   background:rgba(0,0,0,.7);align-items:center;justify-content:center;}
@@ -293,16 +298,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <div id="sim-body">
         <div id="sliders">
           <div class="sl-row">
-            <label>前後距離 <span id="lbl-dist">500m</span></label>
-            <input type="range" id="sl-dist" min="50" max="5000" value="500" step="10" oninput="onSlider()">
-          </div>
-          <div class="sl-row">
             <label>左右方向 <span id="lbl-az">0°</span></label>
             <input type="range" id="sl-az" min="-60" max="60" value="0" step="1" oninput="onSlider()">
           </div>
           <div class="sl-row">
-            <label>仰角 <span id="lbl-el">15°</span></label>
-            <input type="range" id="sl-el" min="0" max="80" value="15" step="1" oninput="onSlider()">
+            <label>上下 <span id="lbl-el">0°</span></label>
+            <input type="range" id="sl-el" min="-60" max="60" value="0" step="1" oninput="onSlider()">
           </div>
           <div class="sl-row">
             <label>焦点距離 <span id="lbl-focal">200mm</span></label>
@@ -314,6 +315,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
           <div id="sim-info"></div>
           <div id="view-info" style="position:absolute;bottom:6px;right:8px;font-size:8px;
             line-height:1.6;pointer-events:none;text-align:right;"></div>
+        </div>
+        <div id="diag-wrap">
+          <canvas id="diag-canvas"></canvas>
         </div>
       </div>
     </div>
@@ -392,6 +396,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <div class="mig">
       <label>建物高さ (m)　※地面から頂点まで</label>
       <input type="number" id="inp-target-height" placeholder="例：103" min="1" max="2000">
+    </div>
+    <div class="mig">
+      <label>形状</label>
+      <select id="inp-target-shape">
+        <option value="box">四角柱</option>
+        <option value="cylinder">円柱</option>
+        <option value="cone">円錐</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="mig">
+        <label>幅 (m)</label>
+        <input type="number" id="inp-target-width" placeholder="例：20" min="1" max="5000">
+      </div>
+      <div class="mig">
+        <label>奥行 (m)</label>
+        <input type="number" id="inp-target-depth" placeholder="例：20" min="1" max="5000">
+      </div>
+    </div>
+    <div class="mig">
+      <label>建物の向き（正面の向く方角）</label>
+      <select id="inp-target-frontaz">
+        <option value="0">北 (N)</option>
+        <option value="45">北東 (NE)</option>
+        <option value="90">東 (E)</option>
+        <option value="135">南東 (SE)</option>
+        <option value="180">南 (S)</option>
+        <option value="225">南西 (SW)</option>
+        <option value="270">西 (W)</option>
+        <option value="315">北西 (NW)</option>
+      </select>
     </div>
     <div class="modal-btns">
       <button class="pb" onclick="cancelAddTarget()">キャンセル</button>
@@ -846,6 +881,10 @@ async function openAddTargetModal(lat,lng){
   pendingTargetLat=lat; pendingTargetLng=lng; pendingTargetElev=0;
   document.getElementById('inp-target-name').value='';
   document.getElementById('inp-target-height').value='';
+  document.getElementById('inp-target-shape').value='box';
+  document.getElementById('inp-target-width').value='';
+  document.getElementById('inp-target-depth').value='';
+  document.getElementById('inp-target-frontaz').value='0'; // 北
   document.getElementById('target-elev-disp').textContent='取得中…';
   openModal('modal-target');
   setTimeout(()=>document.getElementById('inp-target-name').focus(),100);
@@ -859,11 +898,15 @@ function cancelAddTarget(){
   setMapMode('none');
 }
 function saveTarget(){
-  const name   = document.getElementById('inp-target-name').value.trim();
-  const height = parseFloat(document.getElementById('inp-target-height').value);
+  const name    = document.getElementById('inp-target-name').value.trim();
+  const height  = parseFloat(document.getElementById('inp-target-height').value);
+  const shape   = document.getElementById('inp-target-shape').value||'box';
+  const width   = parseFloat(document.getElementById('inp-target-width').value)||20;
+  const depth   = parseFloat(document.getElementById('inp-target-depth').value)||width;
+  const frontAz = parseInt(document.getElementById('inp-target-frontaz').value)||0;
   if(!name){alert('名前を入力してください');return;}
   if(!height||height<=0){alert('高さを入力してください');return;}
-  db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height, elev:pendingTargetElev});
+  db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height, elev:pendingTargetElev, shape, width, depth, frontAz});
   saveDB();
   closeModal('modal-target');
   pendingMarker=null;
@@ -933,6 +976,7 @@ function refreshMapMarkers(){
 let shootingLines=[];  // 配列で管理（複数筒場×下線+上線）
 let viewMarker=null;   // 視点マーカー
 let viewLat=null, viewLng=null, viewManual=false, viewElev=0; // 手動視点・標高
+let gCamAlpha=null, gFovV=null; // 断面図共有：カメラ光軸仰角(deg)・垂直画角(deg)
 
 function drawShootingLine(fid, tid){
   // 既存ライン全削除
@@ -985,9 +1029,8 @@ function refreshSimTubeSelect(){
 
 // ==================== スライダー ====================
 function onSlider(){
-  document.getElementById('lbl-dist').textContent  = document.getElementById('sl-dist').value+'m';
   document.getElementById('lbl-az').textContent    = document.getElementById('sl-az').value+'°';
-  document.getElementById('lbl-el').textContent    = document.getElementById('sl-el').value+'°';
+  document.getElementById('lbl-el').textContent    = (document.getElementById('sl-el').value>0?'+':'')+document.getElementById('sl-el').value+'°';
   document.getElementById('lbl-focal').textContent = document.getElementById('sl-focal').value+'mm';
   renderSim();
 }
@@ -1036,7 +1079,6 @@ function renderSim(){
   const focal     = parseFloat(document.getElementById('sl-focal').value);
   const azOffDeg  = parseFloat(document.getElementById('sl-az').value);
   const elOffDeg  = parseFloat(document.getElementById('sl-el').value);
-  const viewDist  = parseFloat(document.getElementById('sl-dist').value);
   const r = Math.PI/180;
 
   // gnomonic投影（現行ツールと同方式）
@@ -1057,16 +1099,13 @@ function renderSim(){
     simViewLng  = viewLng;
     simViewElev = viewElev||0;
   } else {
-    // 視点→選択筒場方向の延長上にviewDist配置
-    const dLat = tube.lat - tg.lat;
-    const dLng = tube.lng - tg.lng;
-    const dLen = Math.sqrt(dLat*dLat+dLng*dLng)||1e-9;
-    const uLat = dLat/dLen;
-    const uLng = dLng/dLen;
-    const distDeg = viewDist/mPerDeg;
-    simViewLat  = tube.lat + uLat*distDeg;
-    simViewLng  = tube.lng + uLng*distDeg;
-    simViewElev = 0;
+    // 視点未設定時：地図クリックを促すメッセージのみ表示
+    ctx.fillStyle='#7a82a0';
+    ctx.font='11px Space Mono,monospace';
+    ctx.textAlign='center';
+    ctx.fillText('地図をクリックして視点を設定してください',W/2,H/2);
+    document.getElementById('sim-info').textContent='';
+    return;
   }
 
   // 仰角計算（現行ツールのelAng相当、簡易版）
@@ -1109,6 +1148,9 @@ function renderSim(){
   // α_cam = 対象頂点の仰角（→ toY(vaTgTopForCam) = H/2 が成立）
   const alpha_cam = vaTgTopForCam * r;
   const toY = alt => H/2 - f_px_V*Math.tan(alt*r - alpha_cam);
+  // 断面図用：カメラ光軸仰角・垂直画角をグローバルに共有
+  gCamAlpha = vaTgTopForCam; // 度
+  gFovV = fovV_deg;          // 度
 
   // 地平線Y
   const horizonY = toY(0);
@@ -1128,27 +1170,148 @@ function renderSim(){
   ctx.beginPath(); ctx.moveTo(0,hY); ctx.lineTo(W,hY); ctx.stroke();
   ctx.setLineDash([]);
 
-  // 対象物シルエット（矩形）
-  const tgElev   = tg.elev||0;
-  const distTg   = hav(simViewLat,simViewLng,tg.lat,tg.lng)||0.001;
-  const vaTgTop  = calcVA(distTg, simViewElev, tgElev, tg.height) + camElOfs;
-  const vaTgBase = calcVABase(distTg, simViewElev, tgElev) + camElOfs;
-  const tgX  = toX(tg.lat, tg.lng);
-  const tgTY = toY(vaTgTop);
-  const tgBY = Math.max(toY(vaTgBase), tgTY+2);
-  // 幅：建物の見かけ幅（物理幅を距離から計算、最低8px）
-  const physW = Math.max(10, tg.height*0.3); // 簡易：高さの30%を幅と仮定
-  const tgAngW = Math.atan2(physW/2, distTg*1000)*180/Math.PI;
-  const tgW    = Math.max(8, gnoH(tgAngW)*2);
-  ctx.fillStyle='rgba(126,184,232,0.2)';
-  ctx.strokeStyle='rgba(126,184,232,0.7)';
-  ctx.lineWidth=1.5;
-  ctx.fillRect(tgX-tgW/2, tgTY, tgW, tgBY-tgTY);
-  ctx.strokeRect(tgX-tgW/2, tgTY, tgW, tgBY-tgTY);
-  // ラベル
-  ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
-  ctx.fillStyle='rgba(126,184,232,0.9)';
-  ctx.fillText(`${tg.name} ${(tgElev+tg.height).toFixed(0)}m`, tgX, tgTY-5);
+  // ── 対象物 3D描画（現行ツールのgp方式） ──
+  {
+    const tgElev   = tg.elev||0;
+    const distTg   = hav(simViewLat,simViewLng,tg.lat,tg.lng)||0.001;
+    const vaTgTop  = calcVA(distTg, simViewElev, tgElev, tg.height) + camElOfs;
+    const vaTgBase = calcVABase(distTg, simViewElev, tgElev) + camElOfs;
+    const tgCx     = toX(tg.lat, tg.lng); // 中心X
+
+    // 建物パラメータ（未登録時はデフォルト値）
+    const tgShape   = tg.shape   || 'box';
+    const tgW       = tg.width   || Math.max(10, tg.height*0.3);
+    const tgD       = tg.depth   || tgW;
+    const tgFrontAz = tg.frontAz || 0;
+    const tgH       = tg.height;
+    const TG_TOTAL  = Math.max(1, toY(vaTgBase) - toY(vaTgTop)); // px高さ
+
+    // 視点→対象物の方位 → 建物向きとの相対角
+    const viewToTgAz = brng(simViewLat, simViewLng, tg.lat, tg.lng);
+    const relDeg = ((viewToTgAz + 180 - tgFrontAz) + 360) % 360;
+    const gAngle = relDeg * Math.PI / 180;
+    const gSinA  = Math.sin(gAngle), gCosA = Math.cos(gAngle);
+
+    // gp: 3D(x,y,z)m → canvas座標
+    // y=0が地面(vaTgBase)、y=tgHが頂点(vaTgTop)
+    function tgGp(xm, ym, zm){
+      const rx = xm * gCosA - zm * gSinA;
+      const rz = xm * gSinA + zm * gCosA;
+      const yRatio = ym / tgH;
+      const alt_y  = vaTgBase + yRatio * (vaTgTop - vaTgBase);
+      const rzCorr = Math.atan2(rz * Math.sin(vaTgTop*Math.PI/180), distTg*1000) * 180/Math.PI;
+      const pxY    = toY(alt_y + rzCorr);
+      const rxDeg  = Math.atan2(rx, distTg*1000) * 180/Math.PI;
+      return [tgCx + gnoH(rxDeg), pxY];
+    }
+
+    // 面データ収集してZソート描画（現行ツールと同方式）
+    const tgFaces = [];
+    function tgAddFace(pts, nx, nz, fillFn, stroke='rgba(126,184,232,0.6)', lw=1.2){
+      const dot = nx*gSinA + nz*gCosA;
+      if(dot <= 0.02) return;
+      const br = 0.45 + dot*0.5;
+      const depth = pts.reduce((s,p)=>{
+        return s + (p[0]*gSinA + p[2]*gCosA + p[1]);
+      }, 0) / pts.length;
+      tgFaces.push({
+        verts2d: pts.map(p=>tgGp(p[0],p[1],p[2])),
+        fill: fillFn(br), stroke, lw, depth
+      });
+    }
+
+    const hw = tgW/2, hd = tgD/2;
+
+    if(tgShape === 'box'){
+      // 四角柱：4側面
+      [
+        {v:[[-hw,0,-hd],[hw,0,-hd],[hw,tgH,-hd],[-hw,tgH,-hd]], nx:0,  nz:-1},
+        {v:[[hw,0,-hd],[hw,0,hd],[hw,tgH,hd],[hw,tgH,-hd]],     nx:1,  nz:0},
+        {v:[[-hw,0,hd],[hw,0,hd],[hw,tgH,hd],[-hw,tgH,hd]],     nx:0,  nz:1},
+        {v:[[-hw,0,-hd],[-hw,0,hd],[-hw,tgH,hd],[-hw,tgH,-hd]], nx:-1, nz:0},
+      ].forEach(f=>{
+        tgAddFace(f.v, f.nx, f.nz,
+          br=>`rgba(${Math.round(30*br)},${Math.round(80*br)},${Math.round(160*br)},0.75)`);
+      });
+      // 上面（仰角0以下＝見下ろし時のみ）
+      if(vaTgBase < 0){
+        const depth = tgFaces.reduce((s,f)=>s+f.depth,0)/Math.max(1,tgFaces.length) - 50;
+        tgFaces.push({
+          verts2d:[tgGp(-hw,tgH,-hd),tgGp(hw,tgH,-hd),tgGp(hw,tgH,hd),tgGp(-hw,tgH,hd)],
+          fill:'rgba(40,100,200,0.5)', stroke:'rgba(126,184,232,0.5)', lw:0.8, depth
+        });
+      }
+
+    } else if(tgShape === 'cylinder'){
+      // 円柱：16分割の側面
+      const segs = 16;
+      for(let i=0;i<segs;i++){
+        const a0 = (i/segs)*Math.PI*2;
+        const a1 = ((i+1)/segs)*Math.PI*2;
+        const x0=hw*Math.cos(a0), z0=hd*Math.sin(a0);
+        const x1=hw*Math.cos(a1), z1=hd*Math.sin(a1);
+        // 法線（セグメント中央）
+        const am = (a0+a1)/2;
+        const nx_raw = Math.cos(am), nz_raw = Math.sin(am);
+        // モデル座標での法線をワールドに変換
+        const nx_w =  nx_raw*gCosA + nz_raw*gSinA;
+        const nz_w = -nx_raw*gSinA + nz_raw*gCosA;
+        tgAddFace(
+          [[x0,0,z0],[x1,0,z1],[x1,tgH,z1],[x0,tgH,z0]],
+          nx_w, nz_w,
+          br=>`rgba(${Math.round(30*br)},${Math.round(80*br)},${Math.round(160*br)},0.75)`
+        );
+      }
+      // 上面
+      if(vaTgBase < 0){
+        const topPts = Array.from({length:16},(_,i)=>[hw*Math.cos(i/16*Math.PI*2),tgH,hd*Math.sin(i/16*Math.PI*2)]);
+        const depth = tgFaces.reduce((s,f)=>s+f.depth,0)/Math.max(1,tgFaces.length) - 50;
+        tgFaces.push({
+          verts2d: topPts.map(p=>tgGp(p[0],p[1],p[2])),
+          fill:'rgba(40,100,200,0.5)', stroke:'rgba(126,184,232,0.5)', lw:0.8, depth
+        });
+      }
+
+    } else if(tgShape === 'cone'){
+      // 円錐：16分割の側面（底面→頂点）
+      const segs = 16;
+      for(let i=0;i<segs;i++){
+        const a0 = (i/segs)*Math.PI*2;
+        const a1 = ((i+1)/segs)*Math.PI*2;
+        const x0=hw*Math.cos(a0), z0=hd*Math.sin(a0);
+        const x1=hw*Math.cos(a1), z1=hd*Math.sin(a1);
+        const am = (a0+a1)/2;
+        const nx_raw = Math.cos(am), nz_raw = Math.sin(am);
+        const nx_w =  nx_raw*gCosA + nz_raw*gSinA;
+        const nz_w = -nx_raw*gSinA + nz_raw*gCosA;
+        tgAddFace(
+          [[x0,0,z0],[x1,0,z1],[0,tgH,0]],
+          nx_w, nz_w,
+          br=>`rgba(${Math.round(30*br)},${Math.round(80*br)},${Math.round(160*br)},0.75)`
+        );
+      }
+    }
+
+    // Zソートして描画
+    tgFaces.sort((a,b)=>b.depth-a.depth);
+    tgFaces.forEach(f=>{
+      ctx.beginPath();
+      ctx.moveTo(f.verts2d[0][0], f.verts2d[0][1]);
+      for(let i=1;i<f.verts2d.length;i++) ctx.lineTo(f.verts2d[i][0], f.verts2d[i][1]);
+      ctx.closePath();
+      ctx.fillStyle=f.fill; ctx.fill();
+      ctx.strokeStyle=f.stroke; ctx.lineWidth=f.lw; ctx.stroke();
+    });
+
+    // ラベル
+    const tgTopPx = toY(vaTgTop);
+    ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
+    ctx.strokeStyle='rgba(4,6,14,0.85)'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+    const tgLabel = `${tg.name} ${(tgElev+tg.height).toFixed(0)}m`;
+    ctx.strokeText(tgLabel, tgCx, tgTopPx-6);
+    ctx.fillStyle='rgba(126,184,232,0.95)';
+    ctx.fillText(tgLabel, tgCx, tgTopPx-6);
+  }
 
   // 各筒場の花火描画
   const CV_COLORS=['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
@@ -1238,13 +1401,268 @@ function renderSim(){
   const fName = (db.festivals.find(f=>f.id===fid)||{}).name||'';
   const azInfo = ((camAz%360)+360)%360;
   document.getElementById('sim-info').textContent =
-    `方位:${azInfo.toFixed(0)}°  仰角オフ:${elOffDeg}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
+    `方位:${azInfo.toFixed(0)}°  上下:${elOffDeg>0?"+":""}${elOffDeg}°  焦点距離:${focal}mm | ${fName} × ${tg.name}`;
 
   // 地図連携ボタン更新
   updateMapBtns(simViewLat, simViewLng, camAz*r);
   if(viewManual) updateViewLabel();
+  renderDiag();
 }
 
+
+// ==================== 断面図 ====================
+function renderDiag(){
+  const wrap  = document.getElementById('diag-wrap');
+  const canvas= document.getElementById('diag-canvas');
+  if(!wrap||!canvas) return;
+  const W = wrap.clientWidth||200;
+  const H = wrap.clientHeight||200;
+  canvas.width=W; canvas.height=H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
+
+  const fid = document.getElementById('sim-sel-festival').value;
+  const tid = document.getElementById('sim-sel-target').value;
+  if(!fid||!tid||!viewManual||viewLat===null){
+    ctx.fillStyle='#7a82a0'; ctx.font='8px Space Mono,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('視点・大会・対象物を', W/2, H/2-7);
+    ctx.fillText('選択してください', W/2, H/2+7);
+    ctx.textBaseline='alphabetic'; return;
+  }
+
+  const tg    = db.targets.find(x=>x.id===tid);
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
+  const selTubeId = (document.getElementById('sim-sel-tube')||{}).value||'';
+  const tube  = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
+  if(!tg||!tube) return;
+
+  // ── 座標系 ──
+  // 横軸：視点を原点(0)、右方向＝筒場方向
+  // 縦軸：標高(m)
+  const simViewElev = viewElev||0;
+  const tubeElev    = tube.elev||0;
+  const tgElev      = tg.elev||0;
+
+  const distTube = hav(viewLat,viewLng,tube.lat,tube.lng);  // km
+  const distTg   = hav(viewLat,viewLng,tg.lat,tg.lng);      // km
+  // 視点から見て筒場・対象どちらが近いかで横軸方向を決定
+  // 横軸：視点=0、筒場・対象をkm換算でプロット
+  // 視点→筒場方向を正とし、対象は負側にくることもある
+  const azTube = brng(viewLat,viewLng,tube.lat,tube.lng);
+  const azTg   = brng(viewLat,viewLng,tg.lat,tg.lng);
+  // 対象が筒場と同じ側か逆側かを方位差で判定
+  const azDiff = ((azTg - azTube + 540)%360) - 180;
+  const tgSign = Math.cos(azDiff*Math.PI/180) >= 0 ? 1 : -1;
+
+  const xTube = distTube * 1000;           // m（正）
+  const xTg   = distTg * 1000 * tgSign;   // m（対象の向き）
+
+  // 各号数の花火頂点高さ
+  const numRows = tube.nums.map(n=>db.numTable.find(r=>r.num===n)).filter(Boolean);
+
+  // 全ポイントのx・yからスケール計算
+  const allX = [0, xTube, xTg];
+  const allY = [simViewElev, tubeElev, tubeElev + Math.max(...numRows.map(r=>r.height),0),
+                tgElev, tgElev + tg.height];
+  const xMin = Math.min(...allX); const xMax = Math.max(...allX);
+  const yMin = Math.min(...allY); const yMax = Math.max(...allY);
+
+  // マージン
+  const ML=38, MR=12, MT=20, MB=36;
+  const PW = W - ML - MR;
+  const PH = H - MT - MB;
+
+  const xRange = (xMax - xMin)||1;
+  const yRange = (yMax - yMin)||1;
+  // y軸は少し余白
+  const yPad = yRange * 0.15;
+  const yLo = yMin - yPad;
+  const yHi = yMax + yPad;
+
+  function toCanvasX(xm){ return ML + (xm - xMin) / xRange * PW; }
+  function toCanvasY(ym){ return MT + PH - (ym - yLo) / (yHi - yLo) * PH; }
+
+  // ── グリッド ──
+  ctx.strokeStyle='rgba(37,42,64,0.6)'; ctx.lineWidth=0.5;
+  // 水平グリッド（高さ）
+  const yStep = niceStep(yHi - yLo, 4);
+  const yStart = Math.ceil(yLo/yStep)*yStep;
+  for(let y=yStart; y<=yHi; y+=yStep){
+    const cy2 = toCanvasY(y);
+    ctx.beginPath(); ctx.moveTo(ML,cy2); ctx.lineTo(W-MR,cy2); ctx.stroke();
+    ctx.fillStyle='rgba(122,130,160,0.7)'; ctx.font='7px Space Mono,monospace';
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText(y.toFixed(0)+'m', ML-3, cy2);
+  }
+  // 縦軸ゼロ線（地面基準）
+  ctx.strokeStyle='rgba(200,169,110,0.25)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ML,toCanvasY(0)); ctx.lineTo(W-MR,toCanvasY(0)); ctx.stroke();
+
+  // ── 地面ライン ──
+  ctx.strokeStyle='rgba(122,130,160,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ML, toCanvasY(yLo)); ctx.lineTo(W-MR, toCanvasY(yLo)); ctx.stroke();
+
+  // ── 仰角ライン（視点→花火各頂点） ──
+  const CV_COLORS=['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
+  numRows.forEach((row,ni)=>{
+    const fwX = xTube;
+    const fwY = tubeElev + row.height;
+    const vaFW = Math.atan2(fwY - simViewElev, fwX)*180/Math.PI;
+    const color = CV_COLORS[ni % CV_COLORS.length];
+    // 視点→花火頂点の仰角ライン
+    ctx.strokeStyle=color; ctx.globalAlpha=0.5; ctx.lineWidth=0.8;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(0), toCanvasY(simViewElev));
+    ctx.lineTo(toCanvasX(fwX), toCanvasY(fwY));
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+    // 仰角ラベル
+    ctx.fillStyle=color; ctx.font='7px Space Mono,monospace';
+    ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(`${row.num}号 ${vaFW.toFixed(1)}°`,
+      toCanvasX(fwX)+3, toCanvasY(fwY)-2);
+  });
+
+  // ── 仰角ライン（視点→対象頂点） ──
+  const tgTopY = tgElev + tg.height;
+  const vaTg = Math.atan2(tgTopY - simViewElev, xTg)*180/Math.PI;
+  ctx.strokeStyle='rgba(126,184,232,0.6)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(0), toCanvasY(simViewElev));
+  ctx.lineTo(toCanvasX(xTg), toCanvasY(tgTopY));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // ── 対象物シルエット ──
+  const tgCX = toCanvasX(xTg);
+  const tgCYbase = toCanvasY(tgElev);
+  const tgCYtop  = toCanvasY(tgTopY);
+  const tgCW = Math.max(4, PW*0.04);
+  ctx.fillStyle='rgba(126,184,232,0.2)';
+  ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.2;
+  ctx.fillRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+  ctx.strokeRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+
+  // ── 筒場＋花火 ──
+  const tbCX = toCanvasX(xTube);
+  // 地面マーカー
+  ctx.fillStyle='#e8874a';
+  ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
+  // 各号数の花火頂点
+  numRows.forEach((row,ni)=>{
+    const fwCY = toCanvasY(tubeElev + row.height);
+    const color = CV_COLORS[ni % CV_COLORS.length];
+    // 縦の軌跡線
+    ctx.strokeStyle=color; ctx.globalAlpha=0.4; ctx.lineWidth=1;
+    ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(tbCX, toCanvasY(tubeElev)); ctx.lineTo(tbCX, fwCY); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+    // 開花点（横線で幅表現）
+    const radPx = Math.max(2, toCanvasX(row.dia/2) - toCanvasX(0));
+    ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(tbCX-radPx, fwCY); ctx.lineTo(tbCX+radPx, fwCY); ctx.stroke();
+    ctx.fillStyle=color;
+    ctx.beginPath(); ctx.arc(tbCX, fwCY, 2.5, 0, Math.PI*2); ctx.fill();
+  });
+
+  // ── 視点マーカー ──
+  const vpCX = toCanvasX(0);
+  const vpCY = toCanvasY(simViewElev);
+  ctx.fillStyle='#ffffff';
+  ctx.beginPath(); ctx.arc(vpCX, vpCY, 4, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(37,42,64,0.8)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(vpCX, vpCY, 4, 0, Math.PI*2); ctx.stroke();
+
+  // ── 画角ライン（焦点距離＋上下スライダーから計算） ──
+  if(gCamAlpha !== null && gFovV !== null){
+    const camAlphaDeg = gCamAlpha;   // 光軸仰角(deg)
+    const halfFovV    = gFovV / 2;   // 垂直画角の半分(deg)
+    const vaUpper = camAlphaDeg + halfFovV;  // 上端仰角
+    const vaLower = camAlphaDeg - halfFovV;  // 下端仰角
+
+    // 断面図の右端xまで延長
+    const xRight = xMax + xRange * 0.05;
+
+    // 上端・下端それぞれの高さを距離xから計算
+    // y = simViewElev + tan(仰角) * x
+    const upperYatRight = simViewElev + Math.tan(vaUpper * Math.PI/180) * xRight;
+    const lowerYatRight = simViewElev + Math.tan(vaLower * Math.PI/180) * xRight;
+
+    // 上端ライン（黄緑）
+    ctx.strokeStyle='rgba(200,230,100,0.7)'; ctx.lineWidth=1.2; ctx.setLineDash([3,2]);
+    ctx.beginPath();
+    ctx.moveTo(vpCX, vpCY);
+    ctx.lineTo(toCanvasX(xRight), toCanvasY(upperYatRight));
+    ctx.stroke();
+
+    // 下端ライン（黄緑）
+    ctx.beginPath();
+    ctx.moveTo(vpCX, vpCY);
+    ctx.lineTo(toCanvasX(xRight), toCanvasY(lowerYatRight));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 画角の塗りつぶし（淡く）
+    ctx.beginPath();
+    ctx.moveTo(vpCX, vpCY);
+    ctx.lineTo(toCanvasX(xRight), toCanvasY(upperYatRight));
+    ctx.lineTo(toCanvasX(xRight), toCanvasY(lowerYatRight));
+    ctx.closePath();
+    ctx.fillStyle='rgba(200,230,100,0.05)';
+    ctx.fill();
+
+    // 上下端ラベル
+    ctx.fillStyle='rgba(200,230,100,0.85)'; ctx.font='7px Space Mono,monospace';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    const lblX = toCanvasX(xRight) + 2;
+    if(lblX < W - 2){
+      ctx.fillText(`+${halfFovV.toFixed(1)}°`, lblX, toCanvasY(upperYatRight));
+      ctx.fillText(`-${halfFovV.toFixed(1)}°`, lblX, toCanvasY(lowerYatRight));
+    }
+    // 光軸ライン（薄く）
+    const axisYatRight = simViewElev + Math.tan(camAlphaDeg * Math.PI/180) * xRight;
+    ctx.strokeStyle='rgba(200,230,100,0.3)'; ctx.lineWidth=0.8; ctx.setLineDash([1,3]);
+    ctx.beginPath();
+    ctx.moveTo(vpCX, vpCY);
+    ctx.lineTo(toCanvasX(xRight), toCanvasY(axisYatRight));
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // ── X軸ラベル（距離） ──
+  ctx.fillStyle='rgba(122,130,160,0.8)'; ctx.font='7px Space Mono,monospace';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  // 視点
+  ctx.fillStyle='rgba(255,255,255,0.8)';
+  ctx.fillText('視点', vpCX, H-MB+4);
+  // 筒場
+  ctx.fillStyle='#e8874a';
+  const tbLabel = distTube<1 ? Math.round(distTube*1000)+'m' : distTube.toFixed(2)+'km';
+  ctx.fillText(tube.name, tbCX, H-MB+4);
+  ctx.fillText(tbLabel, tbCX, H-MB+13);
+  // 対象
+  ctx.fillStyle='rgba(126,184,232,0.9)';
+  const tgLabel = distTg<1 ? Math.round(distTg*1000)+'m' : distTg.toFixed(2)+'km';
+  ctx.fillText(tg.name, tgCX, H-MB+4);
+  ctx.fillText(tgLabel, tgCX, H-MB+13);
+
+  // ── 対象頂点の仰角ラベル ──
+  ctx.fillStyle='rgba(126,184,232,0.9)'; ctx.font='7px Space Mono,monospace';
+  ctx.textAlign='left'; ctx.textBaseline='bottom';
+  ctx.fillText(`対象 ${vaTg.toFixed(1)}°`, tgCX+3, toCanvasY(tgTopY)-2);
+}
+
+function niceStep(range, targetSteps){
+  const rough = range / targetSteps;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  let step;
+  if(norm < 1.5) step = 1;
+  else if(norm < 3.5) step = 2;
+  else if(norm < 7.5) step = 5;
+  else step = 10;
+  return step * mag;
+}
 
 // ==================== 設定モーダル ====================
 function openSettings(){
@@ -1424,6 +1842,7 @@ async function getElev(lat,lng){
 function onResize(){
   if(map) map.invalidateSize();
   renderSim();
+  renderDiag();
 }
 window.addEventListener('resize', onResize);
 
@@ -1436,6 +1855,7 @@ function init(){
   renderTubeList();
   onSlider();
   renderSim();
+  renderDiag();
   // スマホ判定
   if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
     document.getElementById('pnl-close').style.display='block';
