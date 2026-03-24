@@ -1614,6 +1614,7 @@ function shiftMobSlider(sliderId, lblId, delta, unit){
 // 焦点距離キーパッド
 let _focalPadTarget='pc';
 function openFocalPad(target){
+  alert('openFocalPad called: ' + target);
   _focalPadTarget=target;
   const cur=target==='mob'?getMobFocal():(parseFloat(document.getElementById('sl-focal').value)||50);
   _hkBuf.focal=String(cur);
@@ -2388,6 +2389,7 @@ function closeMobPanel(){
 
 // ==================== スマホドロワー ====================
 function openMobDrawer(){
+  alert('openMobDrawer called');
   refreshMobDrawerSelects();
   const d=document.getElementById('mob-drawer');
   d.style.display='block';
