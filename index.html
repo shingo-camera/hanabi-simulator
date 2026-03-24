@@ -197,7 +197,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .hk-btn{height:44px;display:flex;align-items:center;justify-content:center;
   background:var(--sur2);border:1px solid var(--bd);border-radius:6px;
   font-family:'Space Mono',monospace;font-size:18px;font-weight:700;
-  color:var(--tx);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  color:var(--tx);cursor:pointer;padding:0;
+  -webkit-tap-highlight-color:transparent;-webkit-appearance:none;}
 .hk-btn:active{background:var(--bd);}
 .hk-del{color:var(--sub);font-size:20px;}
 .hk-ok{background:var(--ac);color:var(--bg);border-color:var(--ac);}
@@ -2934,9 +2935,9 @@ function init(){
 
   // overflow/scroll要素に直接登録（passive強制を上書き）
   // mob-drawer-panelはスクロール・スワイプを許可するため除外
-  // touchmove: 全要素でピンチブロック
+  // touchmove: 全要素でピンチブロック（mob-slidersは除外：ボタンタップを妨げないため）
   ['wrap','right','sim-panel','sim-body','cv-wrap','diag-wrap',
-   'mob-sliders','pnl','hdr'
+   'pnl','hdr'
   ].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.addEventListener('touchmove',blockPinch,pinchOpt);
@@ -2975,18 +2976,18 @@ init();
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">焦点距離 (mm)</div>
     <div id="focal-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
-      <div class="hk-btn" onclick="focalPadInput('7')">7</div>
-      <div class="hk-btn" onclick="focalPadInput('8')">8</div>
-      <div class="hk-btn" onclick="focalPadInput('9')">9</div>
-      <div class="hk-btn" onclick="focalPadInput('4')">4</div>
-      <div class="hk-btn" onclick="focalPadInput('5')">5</div>
-      <div class="hk-btn" onclick="focalPadInput('6')">6</div>
-      <div class="hk-btn" onclick="focalPadInput('1')">1</div>
-      <div class="hk-btn" onclick="focalPadInput('2')">2</div>
-      <div class="hk-btn" onclick="focalPadInput('3')">3</div>
-      <div class="hk-btn hk-del" onclick="focalPadInput('DEL')">⌫</div>
-      <div class="hk-btn" onclick="focalPadInput('0')">0</div>
-      <div class="hk-btn hk-ok" onclick="focalPadInput('OK')">OK</div>
+      <button class="hk-btn" onclick="focalPadInput('7')">7</button>
+      <button class="hk-btn" onclick="focalPadInput('8')">8</button>
+      <button class="hk-btn" onclick="focalPadInput('9')">9</button>
+      <button class="hk-btn" onclick="focalPadInput('4')">4</button>
+      <button class="hk-btn" onclick="focalPadInput('5')">5</button>
+      <button class="hk-btn" onclick="focalPadInput('6')">6</button>
+      <button class="hk-btn" onclick="focalPadInput('1')">1</button>
+      <button class="hk-btn" onclick="focalPadInput('2')">2</button>
+      <button class="hk-btn" onclick="focalPadInput('3')">3</button>
+      <button class="hk-btn hk-del" onclick="focalPadInput('DEL')">⌫</button>
+      <button class="hk-btn" onclick="focalPadInput('0')">0</button>
+      <button class="hk-btn hk-ok" onclick="focalPadInput('OK')">OK</button>
     </div>
     <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">9 〜 1200 mm</div>
   </div>
@@ -2998,18 +2999,18 @@ init();
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">三脚高さ (cm)</div>
     <div id="tripod-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
-      <div class="hk-btn" onclick="hkInput('tripod','7')">7</div>
-      <div class="hk-btn" onclick="hkInput('tripod','8')">8</div>
-      <div class="hk-btn" onclick="hkInput('tripod','9')">9</div>
-      <div class="hk-btn" onclick="hkInput('tripod','4')">4</div>
-      <div class="hk-btn" onclick="hkInput('tripod','5')">5</div>
-      <div class="hk-btn" onclick="hkInput('tripod','6')">6</div>
-      <div class="hk-btn" onclick="hkInput('tripod','1')">1</div>
-      <div class="hk-btn" onclick="hkInput('tripod','2')">2</div>
-      <div class="hk-btn" onclick="hkInput('tripod','3')">3</div>
-      <div class="hk-btn hk-del" onclick="hkInput('tripod','DEL')">⌫</div>
-      <div class="hk-btn" onclick="hkInput('tripod','0')">0</div>
-      <div class="hk-btn hk-ok" onclick="hkInput('tripod','OK')">OK</div>
+      <button class="hk-btn" onclick="hkInput('tripod','7')">7</button>
+      <button class="hk-btn" onclick="hkInput('tripod','8')">8</button>
+      <button class="hk-btn" onclick="hkInput('tripod','9')">9</button>
+      <button class="hk-btn" onclick="hkInput('tripod','4')">4</button>
+      <button class="hk-btn" onclick="hkInput('tripod','5')">5</button>
+      <button class="hk-btn" onclick="hkInput('tripod','6')">6</button>
+      <button class="hk-btn" onclick="hkInput('tripod','1')">1</button>
+      <button class="hk-btn" onclick="hkInput('tripod','2')">2</button>
+      <button class="hk-btn" onclick="hkInput('tripod','3')">3</button>
+      <button class="hk-btn hk-del" onclick="hkInput('tripod','DEL')">⌫</button>
+      <button class="hk-btn" onclick="hkInput('tripod','0')">0</button>
+      <button class="hk-btn hk-ok" onclick="hkInput('tripod','OK')">OK</button>
     </div>
     <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">0 〜 500 cm</div>
   </div>
@@ -3021,23 +3022,23 @@ init();
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:6px;letter-spacing:.06em;">標高オフセット (m)</div>
     <div id="elev-pad-disp" style="font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--tx);min-width:110px;text-align:right;padding:4px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;">—</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;">
-      <div class="hk-btn" onclick="hkInput('elev','7')">7</div>
-      <div class="hk-btn" onclick="hkInput('elev','8')">8</div>
-      <div class="hk-btn" onclick="hkInput('elev','9')">9</div>
-      <div class="hk-btn" onclick="hkInput('elev','4')">4</div>
-      <div class="hk-btn" onclick="hkInput('elev','5')">5</div>
-      <div class="hk-btn" onclick="hkInput('elev','6')">6</div>
-      <div class="hk-btn" onclick="hkInput('elev','1')">1</div>
-      <div class="hk-btn" onclick="hkInput('elev','2')">2</div>
-      <div class="hk-btn" onclick="hkInput('elev','3')">3</div>
-      <div class="hk-btn hk-del" onclick="hkInput('elev','DEL')">⌫</div>
-      <div class="hk-btn" onclick="hkInput('elev','0')">0</div>
-      <div class="hk-btn hk-ok" onclick="hkInput('elev','OK')">OK</div>
+      <button class="hk-btn" onclick="hkInput('elev','7')">7</button>
+      <button class="hk-btn" onclick="hkInput('elev','8')">8</button>
+      <button class="hk-btn" onclick="hkInput('elev','9')">9</button>
+      <button class="hk-btn" onclick="hkInput('elev','4')">4</button>
+      <button class="hk-btn" onclick="hkInput('elev','5')">5</button>
+      <button class="hk-btn" onclick="hkInput('elev','6')">6</button>
+      <button class="hk-btn" onclick="hkInput('elev','1')">1</button>
+      <button class="hk-btn" onclick="hkInput('elev','2')">2</button>
+      <button class="hk-btn" onclick="hkInput('elev','3')">3</button>
+      <button class="hk-btn hk-del" onclick="hkInput('elev','DEL')">⌫</button>
+      <button class="hk-btn" onclick="hkInput('elev','0')">0</button>
+      <button class="hk-btn hk-ok" onclick="hkInput('elev','OK')">OK</button>
     </div>
     <!-- 符号ボタン -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin-top:6px;">
-      <div class="hk-btn hk-sign" onclick="hkInput('elev','SIGN')" style="font-size:16px;">±</div>
-      <div class="hk-btn" onclick="hkInput('elev','RESET')" style="font-size:13px;color:var(--sub);">RST</div>
+      <button class="hk-btn hk-sign" onclick="hkInput('elev','SIGN')" style="font-size:16px;">±</button>
+      <button class="hk-btn" onclick="hkInput('elev','RESET')" style="font-size:13px;color:var(--sub);">RST</button>
     </div>
     <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);margin-top:8px;">マイナスは ± で符号切替</div>
   </div>
