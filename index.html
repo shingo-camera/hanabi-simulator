@@ -1438,7 +1438,6 @@ function renderSim(){
   const H = canvas.height||0;
   if(W<10||H<10) return;
   const ctx = canvas.getContext('2d');
-  try {
   // 背景
   ctx.fillStyle='#060810';
   ctx.fillRect(0,0,W,H);
@@ -1800,8 +1799,6 @@ function renderSim(){
   // 地図連携ボタン更新
   updateMapBtns(simViewLat, simViewLng, camAz*r);
   if(viewManual) updateViewLabel();
-  renderDiag();
-  } catch(e) { console.error('[renderSim ERROR]', e); }
 }
 
 
