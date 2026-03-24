@@ -1580,20 +1580,141 @@ function renderSim(){
   ctx.beginPath(); ctx.moveTo(0,horizY); ctx.lineTo(W,horizY); ctx.stroke();
   ctx.setLineDash([]);
 
-  // ── 対象物 ──
-  const tgX     = toX(tAz);
-  const tgTopY  = toY_cam(vaTop);
-  const tgBaseY = toY_cam(vaBase);
-  const tgH_px  = tgBaseY - tgTopY;
-  if(tgH_px > 1){
-    const tgW_px = Math.max(6, f_px_H*(tg.width||20)/(dKm*1000));
-    ctx.fillStyle='rgba(126,184,232,0.18)';
-    ctx.strokeStyle='rgba(126,184,232,0.8)'; ctx.lineWidth=1.5;
-    ctx.fillRect(tgX-tgW_px/2, tgTopY, tgW_px, tgH_px);
-    ctx.strokeRect(tgX-tgW_px/2, tgTopY, tgW_px, tgH_px);
+  // ── 対象物 3D描画 ──
+  {
+    const tgTopY  = toY_cam(vaTop);
+    const tgBaseY = toY_cam(vaBase);
+    const thPx    = Math.max(tgBaseY - tgTopY, 1);
+    const tgH     = tg.height;
+    const tgW     = tg.width  || 20;
+    const tgD     = tg.depth  || tgW;
+    const shape   = tg.shape  || 'box';
+    const fAz     = tg.frontAz|| 0;
+
+    // ムーンプランナーと同方式の3D投影関数
+    // frontAzと視点方位から建物の回転角を計算
+    const viewDir  = (tAz + 180 + 360) % 360;
+    const relDeg   = ((viewDir - fAz) + 360) % 360;
+    const gAngle   = relDeg * r;
+    const sinA = Math.sin(gAngle), cosA = Math.cos(gAngle);
+
+    // (xm,ym_m,zm) → [screenX, screenY]
+    // xm,zm:m単位（中心=0）、ym_m:m単位（根本=0, 頂点=tgH）
+    const gp = (xm, ym_m, zm) => {
+      const rx = xm*cosA - zm*sinA;
+      const rz = xm*sinA + zm*cosA;
+      const yRatio = tgH > 0 ? ym_m / tgH : 0;
+      const alt_y  = vaBase + yRatio*(vaTop - vaBase);
+      // 奥行き方向の仰角補正（ムーンプランナーと同条件）
+      const rzAngCorr = Math.atan2(rz*Math.sin(vaTop*r), dKm*1000)*180/Math.PI;
+      const pxY = toY_cam(alt_y + rzAngCorr);
+      const rxAngDeg = Math.atan2(rx, dKm*1000)*180/Math.PI;
+      const pxX = W/2 + f_px_H*Math.tan(azDiff(camAz, tAz + rxAngDeg)*r);
+      return [pxX, pxY];
+    };
+
+    // 面バッファ（depth順に描画）
+    const faces = [];
+    const addFace = (pts3d, nx, nz, fillFn, drawEdge=true) => {
+      const dot = nx*sinA + nz*cosA;
+      if(dot <= 0) return;  // 裏面カリング
+      const br = Math.max(0.35, 0.5 + dot*0.5);
+      const depth = pts3d.reduce((s,p)=>s+(p[0]*sinA+p[2]*cosA),0)/pts3d.length;
+      faces.push({pts3d, br, fillFn, drawEdge, depth});
+    };
+    const flushFaces = () => {
+      faces.sort((a,b)=>b.depth-a.depth);
+      faces.forEach(({pts3d, br, fillFn, drawEdge}) => {
+        ctx.beginPath();
+        pts3d.forEach(([x,y,z],i)=>{
+          const [px,py]=gp(x,y,z);
+          i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+        });
+        ctx.closePath();
+        ctx.fillStyle = fillFn(br);
+        if(drawEdge){
+          ctx.strokeStyle='rgba(126,184,232,0.5)';
+          ctx.lineWidth=0.8;
+          ctx.fill(); ctx.stroke();
+        } else {
+          ctx.fill();
+        }
+      });
+    };
+
+    // 色関数
+    const colFill = br => `rgba(${Math.round(60*br)},${Math.round(100*br)},${Math.round(160*br)},0.85)`;
+    const colTop  = br => `rgba(${Math.round(80*br)},${Math.round(130*br)},${Math.round(200*br)},0.85)`;
+
+    if(shape==='box'){
+      // ── 直方体：6面（裏面カリングで最大3面が見える）──
+      const hw=tgW/2, hd=tgD/2;
+      [
+        {v:[[ hw,0,-hd],[ hw,tgH,-hd],[-hw,tgH,-hd],[-hw,0,-hd]], nx:0,  nz:-1, f:colFill},
+        {v:[[ hw,0, hd],[-hw,0, hd],[-hw,tgH, hd],[ hw,tgH, hd]], nx:0,  nz: 1, f:colFill},
+        {v:[[ hw,0,-hd],[ hw,0, hd],[ hw,tgH, hd],[ hw,tgH,-hd]], nx:1,  nz: 0, f:colFill},
+        {v:[[-hw,0, hd],[-hw,0,-hd],[-hw,tgH,-hd],[-hw,tgH, hd]], nx:-1, nz: 0, f:colFill},
+        // 屋根
+        {v:[[ hw,tgH,-hd],[ hw,tgH, hd],[-hw,tgH, hd],[-hw,tgH,-hd]], nx:0,  nz: 0, f:colTop},
+      ].forEach(({v,nx,nz,f})=>{
+        // 屋根は上方向なのでdot計算を上向き法線で対応
+        if(nx===0&&nz===0){
+          // 屋根：常に描画（上から見えるかはカメラ仰角で決まる）
+          const br=0.7;
+          const depth=v.reduce((s,p)=>s+(p[0]*sinA+p[2]*cosA),0)/v.length;
+          faces.push({pts3d:v, br, fillFn:f, drawEdge:true, depth});
+        } else {
+          addFace(v, nx, nz, f);
+        }
+      });
+
+    } else if(shape==='cylinder'){
+      // ── 円柱：32角形側面＋上面円 ──
+      const N=32, rad=tgW/2;
+      // 側面：各セグメント（裏面カリング）
+      for(let i=0;i<N;i++){
+        const a0=(i/N)*Math.PI*2, a1=((i+1)/N)*Math.PI*2;
+        const x0=rad*Math.cos(a0), z0=rad*Math.sin(a0);
+        const x1=rad*Math.cos(a1), z1=rad*Math.sin(a1);
+        const nx=(x0+x1)/2, nz=(z0+z1)/2;
+        const nLen=Math.sqrt(nx*nx+nz*nz)||1;
+        addFace([[x0,0,z0],[x1,0,z1],[x1,tgH,z1],[x0,tgH,z0]], nx/nLen, nz/nLen, colFill, false);
+      }
+      // 上面：扇形で描画（常に描画）
+      {
+        const topPts=[];
+        for(let i=0;i<N;i++){
+          const a=(i/N)*Math.PI*2;
+          topPts.push([rad*Math.cos(a), tgH, rad*Math.sin(a)]);
+        }
+        const br=0.7;
+        const depth=0;
+        faces.push({pts3d:topPts, br, fillFn:colTop, drawEdge:false, depth:-999});
+      }
+
+    } else if(shape==='cone'){
+      // ── 円錐：32角形側面＋底面円 ──
+      const N=32, rad=tgW/2;
+      // 側面：各セグメント（裏面カリング）
+      for(let i=0;i<N;i++){
+        const a0=(i/N)*Math.PI*2, a1=((i+1)/N)*Math.PI*2;
+        const x0=rad*Math.cos(a0), z0=rad*Math.sin(a0);
+        const x1=rad*Math.cos(a1), z1=rad*Math.sin(a1);
+        // 法線：側面の外向き（底面中点の外向き法線を使用）
+        const mx=(x0+x1)/2, mz=(z0+z1)/2;
+        const nLen=Math.sqrt(mx*mx+mz*mz)||1;
+        addFace([[x0,0,z0],[x1,0,z1],[0,tgH,0]], mx/nLen, mz/nLen, colFill, false);
+      }
+    }
+
+    flushFaces();
+
+    // ラベル
+    const [lblX]=gp(0, tgH, 0);
+    const lblY = toY_cam(vaTop);
     ctx.fillStyle='rgba(126,184,232,0.9)';
     ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
-    ctx.fillText(tg.name+' '+(tgElev+tg.height).toFixed(0)+'m', tgX, tgTopY-5);
+    ctx.fillText(tg.name+' '+(tgElev+tg.height).toFixed(0)+'m', lblX, lblY-6);
   }
 
   // ── 花火（全筒場×全号数） ──
