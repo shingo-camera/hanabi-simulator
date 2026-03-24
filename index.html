@@ -1322,7 +1322,10 @@ function drawFovLines(){
   const selTubeId = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
   const tubes = fid ? db.tubes.filter(t=>t.festivalId===fid) : [];
   const tube  = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
-  const baseAz = tube ? brng(viewLat, viewLng, tube.lat, tube.lng) : 0;
+  // カメラは対象物に向いている（筒場ではない）
+  const tid2   = document.getElementById('sel-target').value;
+  const tg2    = tid2 ? db.targets.find(x=>x.id===tid2) : null;
+  const baseAz = tg2 ? brng(viewLat, viewLng, tg2.lat, tg2.lng) : (tube ? brng(viewLat, viewLng, tube.lat, tube.lng) : 0);
   const camAz  = (baseAz + azOff + 360) % 360;
 
   // 扇形の奥行き
@@ -1767,19 +1770,11 @@ function renderDiag(){
   ctx.strokeStyle='rgba(37,42,64,0.8)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.arc(vpCX, vpCY, 4, 0, Math.PI*2); ctx.stroke();
 
-  // ── 画角ライン（焦点距離＋上下スライダーから計算） ──
+  // ── 画角ライン（renderSimが設定したgCamAlpha・gFovVを使用） ──
+  if(gCamAlpha !== null && gFovV !== null){
   {
-    // renderDiag内で直接計算（renderSimに依存しない）
-    const isMobD = detectMobile();
-    const focalD = isMobD ? getMobFocal() : parseFloat(document.getElementById('sl-focal').value)||50;
-    const elOffD = isMobD ? getMobEl()    : parseFloat(document.getElementById('sl-el').value)||0;
-    // 垂直画角（compModeで縦横切替）
-    const sensorVD = compMode==='land' ? 24 : 36;
-    const fovV_d  = 2*Math.atan(sensorVD/(2*focalD))*180/Math.PI;
-    // 光軸仰角：視点→対象頂点の仰角＋上下オフセット
-    const distTgD = hav(simViewLat, simViewLng, tg.lat, tg.lng)||0.001;
-    const camAlphaDeg = Math.atan2((tg.elev||0)+tg.height - simViewElev, distTgD*1000)*180/Math.PI + elOffD;
-    const halfFovV    = fovV_d / 2;   // 垂直画角の半分(deg)
+    const camAlphaDeg = gCamAlpha;          // renderSimと完全一致
+    const halfFovV    = gFovV / 2;          // 垂直画角の半分(deg)
     const vaUpper = camAlphaDeg + halfFovV;  // 上端仰角
     const vaLower = camAlphaDeg - halfFovV;  // 下端仰角
 
@@ -1830,6 +1825,7 @@ function renderDiag(){
     ctx.lineTo(toCanvasX(xRight), toCanvasY(axisYatRight));
     ctx.stroke(); ctx.setLineDash([]);
   }
+  } // if(gCamAlpha !== null)
 
   // ── X軸ラベル（距離） ──
   ctx.fillStyle='rgba(122,130,160,0.8)'; ctx.font='7px Space Mono,monospace';
