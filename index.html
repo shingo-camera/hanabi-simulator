@@ -1235,10 +1235,10 @@ const CV_COLORS = ['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
 function renderSim(){
   const canvas = document.getElementById('sim-canvas');
   if(!canvas) return;
-  // layout()がサイズを設定していなければ先にlayout()を呼ぶ
+  // canvasサイズ未設定ならlayoutに任せる
   if(!canvas.width || canvas.width===0){
-    layout();
-    return; // layout()末尾でrenderSim()が呼ばれる
+    requestAnimationFrame(()=>{ layout(); });
+    return;
   }
   const W = canvas.width;
   const H = canvas.height;
@@ -2175,7 +2175,10 @@ function layout(){
   }
 
   if(map) map.invalidateSize();
-  if(isCam) renderSim(); else renderDiag();
+  // rAFでcanvas描画確定後に再描画
+  requestAnimationFrame(()=>{
+    if(currentTab==='cam') renderSim(); else renderDiag();
+  });
 }
 
 function onResize(){
