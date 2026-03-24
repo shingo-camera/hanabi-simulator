@@ -204,8 +204,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   /* スマホ設定ボタン */
   #mob-settings-btn{display:flex!important;}
 
-  /* ドロワー */
-  #mob-drawer{display:block!important;}
+  /* ドロワーはJSで制御（初期はdisplay:none） */
 }
 
 /* landscape-overlay: JS制御（現行ツールと同方式・PCブラウザ縮小誤検知防止） */
@@ -471,29 +470,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
     <!-- 視点設定 -->
     <div class="mob-sec">👁 視点設定</div>
-    <div style="margin-bottom:8px;">
-      <div style="font-size:8.5px;color:var(--sub);margin-bottom:4px;">三脚高さ <span id="mob-tripod-disp" style="color:var(--ac);font-size:10px;">150cm</span></div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;">
-        <button class="pb sm" onclick="shiftTripod(0,true)">Rst</button>
-        <button class="pb sm" onclick="shiftTripod(-10)">−10</button>
-        <button class="pb sm" onclick="shiftTripod(-5)">−5</button>
-        <button class="pb sm" onclick="shiftTripod(-1)">−1</button>
-        <button class="pb sm" onclick="shiftTripod(1)">+1</button>
-        <button class="pb sm" onclick="shiftTripod(5)">+5</button>
-        <button class="pb sm" onclick="shiftTripod(10)">+10</button>
-      </div>
-    </div>
-    <div style="margin-bottom:12px;">
-      <div style="font-size:8.5px;color:var(--sub);margin-bottom:4px;">標高オフセット <span id="mob-elev-offset-disp" style="color:var(--ac);font-size:10px;">0m</span></div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;">
-        <button class="pb sm" onclick="shiftElevOffset(0,true)">Rst</button>
-        <button class="pb sm" onclick="shiftElevOffset(-5)">−5</button>
-        <button class="pb sm" onclick="shiftElevOffset(-3)">−3</button>
-        <button class="pb sm" onclick="shiftElevOffset(-1)">−1</button>
-        <button class="pb sm" onclick="shiftElevOffset(1)">+1</button>
-        <button class="pb sm" onclick="shiftElevOffset(3)">+3</button>
-        <button class="pb sm" onclick="shiftElevOffset(5)">+5</button>
-      </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button id="mob-tripod-btn" onclick="openTripodInput()"
+        style="flex:1;background:var(--sur2);border:1px solid var(--bd);color:var(--tx);
+        border-radius:6px;padding:10px 8px;cursor:pointer;text-align:left;">
+        <div style="font-size:8px;color:var(--sub);margin-bottom:2px;">三脚高さ</div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;color:var(--ac);">
+          <span id="mob-tripod-disp">150</span><span style="font-size:10px;color:var(--sub);">cm</span>
+        </div>
+      </button>
+      <button id="mob-elev-btn" onclick="openElevOffsetInput()"
+        style="flex:1;background:var(--sur2);border:1px solid var(--bd);color:var(--tx);
+        border-radius:6px;padding:10px 8px;cursor:pointer;text-align:left;">
+        <div style="font-size:8px;color:var(--sub);margin-bottom:2px;">標高オフセット</div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;color:var(--ac);">
+          <span id="mob-elev-offset-disp">+0.00</span><span style="font-size:10px;color:var(--sub);">m</span>
+        </div>
+      </button>
     </div>
 
     <!-- 花火基本設定 -->
@@ -1378,17 +1371,42 @@ function syncSimSelects(){
 // ==================== 三脚高さ・標高オフセット ====================
 function shiftTripod(v, reset=false){
   tripodH = reset ? 150 : Math.max(0, Math.min(500, tripodH+v));
-  const el = document.getElementById('mob-tripod-disp');
-  if(el) el.textContent = tripodH+'cm';
-  renderSim();
-  renderDiag();
+  updateTripodDisp();
+  renderSim(); renderDiag();
 }
+function updateTripodDisp(){
+  const el = document.getElementById('mob-tripod-disp');
+  if(el) el.textContent = tripodH;
+}
+function openTripodInput(){
+  const v = prompt('三脚高さ (cm) を入力してください', tripodH);
+  if(v===null) return;
+  const n = parseInt(v);
+  if(isNaN(n)||n<0||n>500){ alert('0〜500cmで入力してください'); return; }
+  tripodH = n;
+  updateTripodDisp();
+  renderSim(); renderDiag();
+}
+
 function shiftElevOffset(v, reset=false){
-  elevOffset = reset ? 0 : elevOffset+v;
+  elevOffset = reset ? 0 : parseFloat((elevOffset+v).toFixed(2));
+  updateElevOffsetDisp();
+  renderSim(); renderDiag();
+}
+function updateElevOffsetDisp(){
   const el = document.getElementById('mob-elev-offset-disp');
-  if(el) el.textContent = (elevOffset>0?'+':'')+elevOffset+'m';
-  renderSim();
-  renderDiag();
+  if(!el) return;
+  const sign = elevOffset>=0 ? '+' : '';
+  el.textContent = sign + elevOffset.toFixed(2);
+}
+function openElevOffsetInput(){
+  const v = prompt('標高オフセット (m) を入力してください\n現在の地点標高に加算されます', elevOffset);
+  if(v===null) return;
+  const n = parseFloat(v);
+  if(isNaN(n)){ alert('数値を入力してください'); return; }
+  elevOffset = parseFloat(n.toFixed(2));
+  updateElevOffsetDisp();
+  renderSim(); renderDiag();
 }
 
 function resetSlider(sliderId, lblId, defaultLabel){
@@ -1433,11 +1451,11 @@ function renderSim(){
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
-  if(!fid||!tid){
-    ctx.fillStyle='#7a82a0';
-    ctx.font='11px Space Mono,monospace';
-    ctx.textAlign='center';
-    ctx.fillText('大会と対象物を選択してください',W/2,H/2);
+  // 大会・対象・視点の3つが揃っている時のみ描画
+  const hasView = viewManual && viewLat!==null;
+  const selTubeIdEarly = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+  if(!fid||!tid||!hasView||!selTubeIdEarly){
+    ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
     document.getElementById('sim-info').textContent='';
     return;
   }
@@ -1445,10 +1463,7 @@ function renderSim(){
   const tg    = db.targets.find(x=>x.id===tid);
   const tubes = db.tubes.filter(t=>t.festivalId===fid);
   if(!tg||tubes.length===0){
-    ctx.fillStyle='#7a82a0';
-    ctx.font='11px Space Mono,monospace';
-    ctx.textAlign='center';
-    ctx.fillText('筒場または対象物が未登録です',W/2,H/2);
+    ctx.fillStyle='#060810'; ctx.fillRect(0,0,W,H);
     return;
   }
 
