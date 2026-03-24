@@ -2522,7 +2522,9 @@ function mobLayout(){
   const tabH    = tabBar ? tabBar.offsetHeight||30 : 30;
   const isPort  = compMode==='port';
   // ムーンプランナーと同様に固定値で計算（offsetHeightの誤差を避ける）
-  const opsH    = 88;
+  const opsEl   = document.getElementById('mob-sliders');
+  const settEl  = document.getElementById('mob-settings-btn');
+  const opsH    = (opsEl ? opsEl.offsetHeight : 0) + (settEl ? settEl.offsetHeight : 0) || 88;
   // ムーンプランナーと同方式: avH*0.45基準
   const pvH_land = Math.round(H * 0.45);
   const bodyH_land = pvH_land - tabH;
