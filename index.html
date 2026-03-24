@@ -2171,44 +2171,87 @@ function renderDiag(){
   ctx.fillStyle='#e8874a';
   ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
 
-  // ── 花火の高さ水平破線ライン（左端へ）＋数値ラベル ──
-  // 全号数の最大高さ・中心高さ・最小高さを収集してY位置が近いものをまとめる
+  // ── 花火の高さ水平破線ライン＋ラベル（重なり回避・色分け） ──
   {
-    const lineItems = []; // {y:実高さm, label:文字列, color:色}
+    // 最大:薄、中心:濃、最小:薄 で透明度を変えて視覚的に区別
+    const lineItems = [];
     numRows.forEach((row, ni) => {
-      const color = CV_COLORS[ni % CV_COLORS.length];
+      const baseColor = CV_COLORS[ni % CV_COLORS.length];
       const yCenter = tubeElev + row.height;
       const yTop    = tubeElev + row.height + row.dia/2;
       const yBot    = tubeElev + row.height - row.dia/2;
-      // 開花半径px（縦スケール基準）
-      const radYpx2 = Math.abs(toCanvasY(yCenter - row.dia/2) - toCanvasY(yCenter));
-      const radPx2  = Math.max(3, radYpx2);
-      lineItems.push({y:yTop,    label:`${row.num}号 最大 ${yTop.toFixed(0)}m`,    color, dash:[2,3], alpha:0.5, radPx:radPx2});
-      lineItems.push({y:yCenter, label:`${row.num}号 中心 ${yCenter.toFixed(0)}m`, color, dash:[4,2], alpha:0.8, radPx:radPx2});
-      lineItems.push({y:yBot,    label:`${row.num}号 最小 ${yBot.toFixed(0)}m`,    color, dash:[2,3], alpha:0.5, radPx:radPx2});
+      // 最大・中心・最小で色のalphaを変える（中心が最も濃い）
+      lineItems.push({y:yTop,    label:`${row.num}号 最大 ${yTop.toFixed(0)}m`,    color:baseColor, lineAlpha:0.35, lblAlpha:0.55, dash:[1,4], lw:0.5});
+      lineItems.push({y:yCenter, label:`${row.num}号 中心 ${yCenter.toFixed(0)}m`, color:baseColor, lineAlpha:0.75, lblAlpha:0.95, dash:[5,3], lw:0.9});
+      lineItems.push({y:yBot,    label:`${row.num}号 最小 ${yBot.toFixed(0)}m`,    color:baseColor, lineAlpha:0.35, lblAlpha:0.55, dash:[1,4], lw:0.5});
     });
 
-    // 各ラインを描画
+    // Y座標でソート（上→下）
+    lineItems.sort((a,b) => a.y - b.y).reverse(); // canvas上=Y小=高いm → 上から処理
+
+    // 破線を描画（ラベルより先に）
     lineItems.forEach(item => {
       const cy = toCanvasY(item.y);
-      if(cy < MT - 2 || cy > H - MB + 2) return; // 描画範囲外はスキップ
-
-      // 左端から筒場Xまで破線
+      if(cy < MT - 2 || cy > H - MB + 2) return;
       ctx.strokeStyle = item.color;
-      ctx.globalAlpha = item.alpha;
-      ctx.lineWidth   = 0.7;
+      ctx.globalAlpha = item.lineAlpha;
+      ctx.lineWidth   = item.lw;
       ctx.setLineDash(item.dash);
       ctx.beginPath();
       ctx.moveTo(ML, cy);
       ctx.lineTo(toCanvasX(xTube), cy);
       ctx.stroke();
       ctx.setLineDash([]); ctx.globalAlpha = 1;
+    });
 
-      // ラベルをcanvas右端から右揃えで表示
+    // ラベル配置（重なり回避）
+    // Y座標でソートして上から順に、前ラベルと重なる場合は下にずらす
+    const lblH = fSm + 2; // ラベル1行の高さ
+    const placed = []; // {cy: 実際に描いたY, origCy: 本来のY, item}
+
+    // 上から順（cy小=画面上）に処理
+    const sorted = lineItems
+      .map(item => ({...item, origCy: toCanvasY(item.y)}))
+      .filter(item => item.origCy >= MT - 2 && item.origCy <= H - MB + 2)
+      .sort((a,b) => a.origCy - b.origCy);
+
+    sorted.forEach(item => {
+      let cy = item.origCy;
+      // 既に配置済みのラベルと重なる場合は下にずらす（累積）
+      let changed = true;
+      while(changed){
+        changed = false;
+        for(const p of placed){
+          if(Math.abs(p.cy - cy) < lblH){
+            cy = p.cy + lblH; // 下にずらす
+            changed = true;
+          }
+        }
+      }
+      // 下限チェック
+      cy = Math.min(cy, H - MB - 1);
+      placed.push({cy, origCy: item.origCy, item});
+    });
+
+    // ラベルと引き出し線を描画
+    ctx.font = fSm+'px Space Mono,monospace';
+    ctx.textAlign = 'right';
+    placed.forEach(({cy, origCy, item}) => {
+      // ずれた場合は引き出し線（元のY→ラベルY）
+      if(Math.abs(cy - origCy) > 2){
+        ctx.strokeStyle = item.color;
+        ctx.globalAlpha = item.lblAlpha * 0.4;
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([1,2]);
+        ctx.beginPath();
+        ctx.moveTo(W - fSm*7 - 4, origCy);
+        ctx.lineTo(W - fSm*7 - 4, cy);
+        ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+      }
+      // ラベル本体
       ctx.fillStyle = item.color;
-      ctx.globalAlpha = item.alpha + 0.1;
-      ctx.font = fSm+'px Space Mono,monospace';
-      ctx.textAlign = 'right';
+      ctx.globalAlpha = item.lblAlpha;
       ctx.textBaseline = 'middle';
       ctx.fillText(item.label, W - 2, cy);
       ctx.globalAlpha = 1;
@@ -2297,10 +2340,18 @@ function renderDiag(){
   ctx.fillText(tg.name, tgCX, H-MB+4);
   ctx.fillText(tgLabel, tgCX, H-MB+4+fSm+2);
 
-  // ── 対象頂点の仰角ラベル ──
+  // ── 対象頂点の仰角ラベル（右端に収まらない場合は左揃え）──
   ctx.fillStyle='rgba(126,184,232,0.9)'; ctx.font=fSm+'px Space Mono,monospace';
-  ctx.textAlign='left'; ctx.textBaseline='bottom';
-  ctx.fillText(`対象 ${vaTg.toFixed(1)}°`, tgCX+3, toCanvasY(tgTopY)-2);
+  ctx.textBaseline='bottom';
+  const tgVaLabel = `対象 ${vaTg.toFixed(1)}°`;
+  const tgLblW = ctx.measureText(tgVaLabel).width;
+  const tgLblX = tgCX + 3;
+  if(tgLblX + tgLblW <= W - 2){
+    ctx.textAlign='left'; ctx.fillText(tgVaLabel, tgLblX, toCanvasY(tgTopY)-2);
+  } else {
+    // 右端を超える場合はシルエットの左側に描く
+    ctx.textAlign='right'; ctx.fillText(tgVaLabel, tgCX - 3, toCanvasY(tgTopY)-2);
+  }
 }
 
 function niceStep(range, targetSteps){
