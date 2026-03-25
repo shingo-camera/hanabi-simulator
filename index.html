@@ -1861,7 +1861,8 @@ function calcCamParams(){
     else {
       const maxRow = numRows.reduce((a,b)=>a.height>b.height?a:b);
       const dKm = hav(simLat,simLng,selTube.lat,selTube.lng);
-      const vaTop = elAng(dKm, sElev, selTube.elev||0, maxRow.height + maxRow.dia/2);
+      // 中心高さをカメラ光軸基準に
+      const vaTop = elAng(dKm, sElev, selTube.elev||0, maxRow.height);
       gCamAlpha = vaTop + elOff;
     }
   }
@@ -1947,7 +1948,8 @@ function renderSim(){
   // 対象なし時は選択筒場の最大号数頂点を仮想ターゲットに
   const simNumRows = selTube.nums.map(n=>db.numTable.find(r=>r.num===n)).filter(Boolean);
   const simMaxRow  = simNumRows.length>0 ? simNumRows.reduce((a,b)=>a.height>b.height?a:b) : null;
-  const simTargetH = tg ? tg.height : (simMaxRow ? simMaxRow.height + simMaxRow.dia/2 : 100);
+  // 対象なし時：最大号数の中心高さをカメラ光軸基準に（頂点ではなく中心）
+  const simTargetH = tg ? tg.height : (simMaxRow ? simMaxRow.height : 100);
   const vaTop  = elAng(dKm, sElev, tgElev, simTargetH);
   const vaBase = elAng(dKm, sElev, tgElev, 0);
 
