@@ -375,7 +375,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </select>
     </div>
     <div class="row2" style="margin-bottom:6px;">
-      <button class="pb sm" onclick="openAddFestival()">＋ 新規大会</button>
+      <button class="pb sm" onclick="openAddFestival()">＋ 新規登録</button>
       <button class="pb sm" id="btn-edit-festival" onclick="openEditFestival()" disabled>✎ 編集</button>
     </div>
 
@@ -614,7 +614,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </select>
     </div>
     <div class="row2" style="margin-bottom:10px;">
-      <button class="pb sm" onclick="openAddFestival()">＋ 新規大会</button>
+      <button class="pb sm" onclick="openAddFestival()">＋ 新規登録</button>
       <button class="pb sm" id="mob-btn-edit-festival" onclick="openEditFestival()" disabled>✎ 編集</button>
     </div>
 
@@ -698,16 +698,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 <div class="modal-overlay" id="modal-tube">
   <div class="modal">
     <h2 id="tube-modal-title">🔴 筒場を登録</h2>
+    <div class="sec" style="margin-bottom:6px;">🎆 花火大会</div>
+    <div class="mig">
+      <select id="inp-tube-festival" style="width:100%;"></select>
+    </div>
+    <div class="mig">
+      <button class="pb" style="width:100%;" onclick="openFestivalFromTube()">＋ 新規登録</button>
+    </div>
+    <div class="sec" style="margin-top:6px;margin-bottom:6px;">🔴 筒場</div>
     <div class="mig">
       <label>筒場名</label>
       <input type="text" id="inp-tube-name" placeholder="例：第1筒場・東側">
-    </div>
-    <div class="mig">
-      <label>大会</label>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <select id="inp-tube-festival" style="flex:1;min-width:0;"></select>
-        <button class="pb sm" onclick="openFestivalFromTube()" style="flex-shrink:0;white-space:nowrap;">＋ 新規</button>
-      </div>
     </div>
     <div class="mig" id="tube-elev-row">
       <label>地面標高</label>
@@ -983,8 +984,8 @@ async function onViewPick(){
         <div style="width:12px;height:12px;border-radius:50%;flex-shrink:0;
           background:#7eb8e8;border:2px solid white;box-shadow:0 0 8px #7eb8e8;"></div>
         <div id="vmarker-label" style="background:rgba(10,12,20,.78);border-radius:3px;
-          padding:1px 5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
-          color:#7eb8e8;white-space:nowrap;pointer-events:none;line-height:1.5;">取得中…</div>
+          padding:2px 6px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;
+          color:#7eb8e8;pointer-events:none;line-height:1.6;">取得中…</div>
       </div>`,
       className:'', iconAnchor:[6,6]
     }),
@@ -1025,12 +1026,13 @@ function updateViewLabel(){
 
   let parts = [];
 
-  // 筒場との距離（各筒場を個別表示）
-  tubes.forEach((t,i)=>{
-    const d = hav(viewLat,viewLng,t.lat,t.lng);
-    const dist = d<1 ? `${Math.round(d*1000)}m` : `${d.toFixed(2)}km`;
-    parts.push(`筒${i+1}:${dist}`);
-  });
+  // 選択筒場との距離
+  const selTubeIdL = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+  const selTubeL = db.tubes.find(t=>t.id===selTubeIdL);
+  if(selTubeL){
+    const d = hav(viewLat,viewLng,selTubeL.lat,selTubeL.lng);
+    parts.push(`筒:${d<1?Math.round(d*1000)+'m':d.toFixed(2)+'km'}`);
+  }
 
   // 対象物との距離
   if(tg){
@@ -1041,7 +1043,8 @@ function updateViewLabel(){
   // 標高
   parts.push(`E:${(viewElev||0).toFixed(1)}m`);
 
-  lbl.textContent = parts.join('  ');
+  // 縦3行表示
+  lbl.innerHTML = parts.map(p=>`<div>${p}</div>`).join('');
 
   // sim-info下部にも詳細表示
   const infoEl = document.getElementById('view-info');
