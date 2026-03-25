@@ -1390,11 +1390,16 @@ function saveTarget(){
   closeModal('modal-target');
   pendingMarker=null;
   setMapMode('none');
-  refreshTargetSelects();
-  // 新規登録したものを選択
+  // 新規登録したものを選択（refreshの前にIDを確定）
   const last = db.targets[db.targets.length-1];
-  document.getElementById('sel-target').value = last.id;
+  refreshTargetSelects();
+  // PC・スマホ両方に新規IDをセット
+  const pcSelT = document.getElementById('sel-target');
+  if(pcSelT) pcSelT.value = last.id;
+  const mobSelT = document.getElementById('mob-sel-target');
+  if(mobSelT) mobSelT.value = last.id;
   onTargetChange();
+  updateMobBarLabels();
 }
 let editingTargetId = null; // 編集中の対象物ID（null=新規）
 
@@ -3085,6 +3090,11 @@ async function extractAndApplyMapsURL(rawText){
   function applyCoords(lat,lng){
     if(!isValidCoord(lat,lng))return false;
     if(map) map.setView([lat,lng],15);
+    // 視点として登録（onMapClickと同等の処理）
+    viewLat = lat;
+    viewLng = lng;
+    viewManual = true;
+    onViewPick();
     return true;
   }
   function extractCoords(text){
