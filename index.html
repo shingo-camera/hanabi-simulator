@@ -2288,273 +2288,148 @@ function renderDiag(){
   ctx.strokeStyle='rgba(122,130,160,0.5)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(ML, toCanvasY(yLo)); ctx.lineTo(W-MR, toCanvasY(yLo)); ctx.stroke();
 
-  // ── 仰角ライン（視点→花火各頂点） ──
+  // ── 仰角ライン＋右端ラベル（高さm・仰角°）統合 ──
+  // 描画する全アイテムを収集（仰角高い順にソートして右端に縦並び）
   const CV_COLORS=['#e8874a','#f5c842','#7eb8e8','#e87ea8','#7ee8b0','#c87ef5'];
-  numRows.forEach((row,ni)=>{
-    const fwX = xTube;
-    const fwY = tubeElev + row.height;
-    const vaFW = Math.atan2(fwY - simViewElev, fwX)*180/Math.PI;
+
+  // maxRowDiagを改めて取得
+  const numRowsAll = numRows; // 既に上で定義済み
+
+  // 最大号数を特定
+  const maxRowFW = numRowsAll.length>0 ? numRowsAll.reduce((a,b)=>a.height>b.height?a:b) : null;
+
+  // 仰角ライン用アイテム収集
+  // { y: 高度(m), x: 水平距離(m), label_m: 高さ, label_va: 仰角, color, lineW, dash, isTg }
+  const vaItems = [];
+
+  // 各号数：中心
+  numRowsAll.forEach((row,ni)=>{
     const color = CV_COLORS[ni % CV_COLORS.length];
-    // 視点→花火頂点の仰角ライン
-    ctx.strokeStyle=color; ctx.globalAlpha=0.5; ctx.lineWidth=0.8;
-    ctx.setLineDash([3,3]);
-    ctx.beginPath();
-    ctx.moveTo(toCanvasX(0), toCanvasY(simViewElev));
-    ctx.lineTo(toCanvasX(fwX), toCanvasY(fwY));
-    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
-    // 仰角ラベル
-    ctx.fillStyle=color; ctx.font=fSm+'px Space Mono,monospace';
-    ctx.textAlign='right'; ctx.textBaseline='bottom';
-    ctx.fillText(`${row.num}号 ${vaFW.toFixed(1)}°`, W-2, toCanvasY(fwY)-2);
+    const yCenter = tubeElev + row.height;
+    const va = Math.atan2(yCenter - simViewElev, xTube)*180/Math.PI;
+    vaItems.push({y:yCenter, x:xTube, label_m:`${yCenter.toFixed(0)}m`,
+      label_va:`${row.num}号中心 ${va.toFixed(1)}°`, color,
+      lineW:0.8, dash:[3,3], alpha:0.55, isMax:false, isTg:false});
   });
 
-  // ── 仰角ライン（視点→対象頂点）対象がある場合のみ ──
-  const tgTopY = tg ? tgElev + tg.height : tubeElev + (maxRowDiag ? maxRowDiag.height + maxRowDiag.dia/2 : 0);
-  const vaTg = tg ? Math.atan2(tgTopY - simViewElev, xTg)*180/Math.PI : null;
-  if(tg){
-    ctx.strokeStyle='rgba(126,184,232,0.6)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  // 最大号数：上端・下端
+  if(maxRowFW){
+    const color = CV_COLORS[0]; // 常にオレンジ系
+    const yTop = tubeElev + maxRowFW.height + maxRowFW.dia/2;
+    const yBot = tubeElev + maxRowFW.height - maxRowFW.dia/2;
+    const vaTop = Math.atan2(yTop - simViewElev, xTube)*180/Math.PI;
+    const vaBot = Math.atan2(yBot - simViewElev, xTube)*180/Math.PI;
+    vaItems.push({y:yTop, x:xTube, label_m:`${yTop.toFixed(0)}m`,
+      label_va:`最大↑ ${vaTop.toFixed(1)}°`, color:'#ffcc44',
+      lineW:1.2, dash:[5,2], alpha:0.8, isMax:true, isTg:false});
+    vaItems.push({y:yBot, x:xTube, label_m:`${yBot.toFixed(0)}m`,
+      label_va:`最大↓ ${vaBot.toFixed(1)}°`, color:'#ffcc44',
+      lineW:0.8, dash:[2,4], alpha:0.5, isMax:false, isTg:false});
+  }
+
+  // 対象頂点
+  const tgTopY2 = tg ? tgElev + tg.height : null;
+  if(tg && tgTopY2 !== null){
+    const vaTg2 = Math.atan2(tgTopY2 - simViewElev, xTg)*180/Math.PI;
+    vaItems.push({y:tgTopY2, x:xTg, label_m:`${tgTopY2.toFixed(0)}m`,
+      label_va:`対象↑ ${vaTg2.toFixed(1)}°`, color:'rgba(126,184,232,0.9)',
+      lineW:1.0, dash:[4,3], alpha:0.7, isMax:false, isTg:true});
+  }
+
+  // 仰角高い順にソート
+  vaItems.sort((a,b)=>b.y - a.y);
+
+  // ── 仰角ライン描画（視点→各ポイント）──
+  vaItems.forEach(item=>{
+    const cy = toCanvasY(item.y);
+    const cx = toCanvasX(item.x);
+    if(cy < MT-2 || cy > H-MB+2) return;
+    ctx.strokeStyle = item.color;
+    ctx.globalAlpha = item.alpha;
+    ctx.lineWidth   = item.lineW;
+    ctx.setLineDash(item.dash);
     ctx.beginPath();
     ctx.moveTo(toCanvasX(0), toCanvasY(simViewElev));
-    ctx.lineTo(toCanvasX(xTg), toCanvasY(tgTopY));
-    ctx.stroke(); ctx.setLineDash([]);
-  }
-
-  // ── 対象物シルエット（対象がある場合のみ）──
-  const tgCX = toCanvasX(xTg);
-  const tgCYbase = toCanvasY(tgElev);
-  const tgCYtop  = toCanvasY(tgTopY);
-  const tgCW = Math.max(4, PW*0.04);
-  if(tg){
-    ctx.fillStyle='rgba(126,184,232,0.2)';
-    ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.2;
-    ctx.fillRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
-    ctx.strokeRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
-  }
-
-  // ── 筒場＋花火 ──
-  const tbCX = toCanvasX(xTube);
-  // 各号数：軌跡＋開花径点線円
-  numRows.forEach((row,ni)=>{
-    const fwCY = toCanvasY(tubeElev + row.height);
-    const color = CV_COLORS[ni % CV_COLORS.length];
-    // 上昇軌跡（点線）
-    ctx.strokeStyle=color; ctx.globalAlpha=0.35; ctx.lineWidth=0.8;
-    ctx.setLineDash([2,3]);
-    ctx.beginPath(); ctx.moveTo(tbCX, toCanvasY(tubeElev)); ctx.lineTo(tbCX, fwCY); ctx.stroke();
-    ctx.setLineDash([]); ctx.globalAlpha=1;
-    // 開花径：点線正円（縦方向のスケールを正として半径計算）
-    const radYpx = Math.abs(toCanvasY(tubeElev + row.height - row.dia/2) - toCanvasY(tubeElev + row.height));
-    const radPx  = Math.max(3, radYpx);
-    ctx.strokeStyle=color; ctx.globalAlpha=0.7; ctx.lineWidth=1.2;
-    ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.arc(tbCX, fwCY, radPx, 0, Math.PI*2); ctx.stroke();
-    ctx.setLineDash([]); ctx.globalAlpha=1;
-    // 中心点
-    ctx.fillStyle=color;
-    ctx.beginPath(); ctx.arc(tbCX, fwCY, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
   });
-  // 地面マーカー（花火の後に描いて上に重なるように）
-  ctx.fillStyle='#e8874a';
-  ctx.beginPath(); ctx.arc(tbCX, toCanvasY(tubeElev), 4, 0, Math.PI*2); ctx.fill();
 
-  // ── 花火の高さ水平破線ライン＋ラベル（X方向に並べて重なり回避） ──
-  {
-    const lineItems = [];
-    numRows.forEach((row, ni) => {
-      const color   = CV_COLORS[ni % CV_COLORS.length];
-      const yCenter = tubeElev + row.height;
-      const yTop    = tubeElev + row.height + row.dia/2;
-      const yBot    = tubeElev + row.height - row.dia/2;
-      // 中心はフルラベル、最大・最小はm数値のみ
-      lineItems.push({y:yTop,    label:`${yTop.toFixed(0)}m`,               color, dash:[3,3], lw:0.7});
-      lineItems.push({y:yCenter, label:`${row.num}号 中心 ${yCenter.toFixed(0)}m`, color, dash:[5,2], lw:0.9});
-      lineItems.push({y:yBot,    label:`${yBot.toFixed(0)}m`,               color, dash:[3,3], lw:0.7});
-    });
+  // ── 水平破線（高さ）──
+  vaItems.forEach(item=>{
+    const cy = toCanvasY(item.y);
+    if(cy < MT-2 || cy > H-MB+2) return;
+    ctx.strokeStyle = item.color;
+    ctx.globalAlpha = item.isMax ? 0.5 : (item.isTg ? 0.4 : 0.35);
+    ctx.lineWidth   = item.isMax ? 0.9 : 0.6;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(ML, cy);
+    ctx.lineTo(toCanvasX(item.x), cy);
+    ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  });
 
-    // 破線を先に描画（全て同じ濃さ）
-    lineItems.forEach(item => {
+  // ── 右端ラベル（高さm + 仰角°）重なり回避して縦並び ──
+  ctx.font = fSm+'px Space Mono,monospace';
+  ctx.textBaseline = 'middle';
+
+  // 各アイテムの本来のY位置（canvas座標）
+  const lblItems = vaItems
+    .filter(item=>{
       const cy = toCanvasY(item.y);
-      if(cy < MT - 2 || cy > H - MB + 2) return;
+      return cy >= MT && cy <= H-MB;
+    })
+    .map(item=>({
+      ...item,
+      origCY: toCanvasY(item.y),
+      placedCY: toCanvasY(item.y)
+    }));
+
+  // 重なり回避（上から順に、最小間隔fSm+2を確保）
+  const minGap = fSm + 3;
+  for(let pass=0; pass<5; pass++){
+    for(let i=1; i<lblItems.length; i++){
+      const prev = lblItems[i-1];
+      const cur  = lblItems[i];
+      if(cur.placedCY - prev.placedCY < minGap){
+        cur.placedCY = prev.placedCY + minGap;
+      }
+    }
+  }
+  // 下端clamp
+  lblItems.forEach(item=>{
+    item.placedCY = Math.min(item.placedCY, H-MB-1);
+  });
+
+  // ラベル描画
+  const mW = ctx.measureText('9999m').width + 2; // mラベル幅
+  lblItems.forEach(item=>{
+    const cy = item.placedCY;
+    const origCY = item.origCY;
+
+    // ずれた場合は細い引き出し線
+    if(Math.abs(cy - origCY) > 2){
       ctx.strokeStyle = item.color;
-      ctx.globalAlpha = 0.6;
-      ctx.lineWidth   = item.lw;
-      ctx.setLineDash(item.dash);
-      ctx.beginPath();
-      ctx.moveTo(ML, cy);
-      ctx.lineTo(toCanvasX(xTube), cy);
-      ctx.stroke();
-      ctx.setLineDash([]); ctx.globalAlpha = 1;
-    });
-
-    // ラベルをY高さ順（高い順）にX方向へ並べる
-    ctx.font = fSm+'px Space Mono,monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    // 描画範囲内のものだけ取得し高さ順ソート
-    const visible = lineItems
-      .filter(item => {
-        const cy = toCanvasY(item.y);
-        return cy >= MT && cy <= H - MB;
-      })
-      .sort((a,b) => b.y - a.y); // 高い順（y値大→小）
-
-    const pad = 4;  // ラベル間の隙間
-    let curX = ML;  // 現在のX書き込み位置
-    const lblRowH = fSm + 2;
-
-    visible.forEach(item => {
-      const cy   = toCanvasY(item.y);
-      const tw   = ctx.measureText(item.label).width;
-      // 右端を超えたら左に折り返し
-      if(curX + tw + pad > W - 2) curX = ML;
-      const lx = curX;
-      curX += tw + pad + 2;
-
-      // 縦引き出し線（ラベルX中心→破線Y）
-      ctx.strokeStyle = item.color;
-      ctx.globalAlpha = 0.4;
+      ctx.globalAlpha = 0.3;
       ctx.lineWidth = 0.5;
       ctx.setLineDash([1,3]);
       ctx.beginPath();
-      ctx.moveTo(lx + tw/2, cy);
-      ctx.lineTo(lx + tw/2, cy - lblRowH);
+      ctx.moveTo(W - mW - ctx.measureText(item.label_va).width - 8, origCY);
+      ctx.lineTo(W - mW - ctx.measureText(item.label_va).width - 8, cy);
       ctx.stroke();
       ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
 
-      // ラベル背景（視認性向上）
-      ctx.fillStyle = 'rgba(6,8,16,0.6)';
-      ctx.fillRect(lx - 1, cy - lblRowH - fSm/2, tw + 2, fSm + 2);
+    // 仰角°ラベル（右端）
+    ctx.fillStyle = item.color;
+    ctx.globalAlpha = 0.9;
+    ctx.textAlign = 'right';
+    ctx.fillText(item.label_va, W - 2, cy);
 
-      // ラベルテキスト
-      ctx.fillStyle = item.color;
-      ctx.globalAlpha = 0.9;
-      ctx.fillText(item.label, lx, cy - lblRowH);
-      ctx.globalAlpha = 1;
-    });
-  }
+    ctx.globalAlpha = 1;
+  });
 
-  // ── 視点マーカー ──
-  const vpCX = toCanvasX(0);
-  const vpCY = toCanvasY(simViewElev);
-  ctx.fillStyle='#ffffff';
-  ctx.beginPath(); ctx.arc(vpCX, vpCY, 4, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle='rgba(37,42,64,0.8)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(vpCX, vpCY, 4, 0, Math.PI*2); ctx.stroke();
-
-  // ── 画角ライン（renderSimが設定したgCamAlpha・gFovVを使用） ──
-  if(gCamAlpha !== null && gFovV !== null){
-  {
-    const camAlphaDeg = gCamAlpha;          // renderSimと完全一致
-    const halfFovV    = gFovV / 2;          // 垂直画角の半分(deg)
-    const vaUpper = camAlphaDeg + halfFovV;  // 上端仰角
-    const vaLower = camAlphaDeg - halfFovV;  // 下端仰角
-
-    // 断面図の右端xまで延長
-    const xRight = xMax + xRange * 0.05;
-
-    // 上端・下端それぞれの高さを距離xから計算
-    // y = simViewElev + tan(仰角) * x
-    const upperYatRight = simViewElev + Math.tan(vaUpper * Math.PI/180) * xRight;
-    const lowerYatRight = simViewElev + Math.tan(vaLower * Math.PI/180) * xRight;
-
-    // 上端ライン（黄緑）
-    ctx.strokeStyle='rgba(200,230,100,0.7)'; ctx.lineWidth=1.2; ctx.setLineDash([3,2]);
-    ctx.beginPath();
-    ctx.moveTo(vpCX, vpCY);
-    ctx.lineTo(toCanvasX(xRight), toCanvasY(upperYatRight));
-    ctx.stroke();
-
-    // 下端ライン（黄緑）
-    ctx.beginPath();
-    ctx.moveTo(vpCX, vpCY);
-    ctx.lineTo(toCanvasX(xRight), toCanvasY(lowerYatRight));
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 画角の塗りつぶし（淡く）
-    ctx.beginPath();
-    ctx.moveTo(vpCX, vpCY);
-    ctx.lineTo(toCanvasX(xRight), toCanvasY(upperYatRight));
-    ctx.lineTo(toCanvasX(xRight), toCanvasY(lowerYatRight));
-    ctx.closePath();
-    ctx.fillStyle='rgba(200,230,100,0.05)';
-    ctx.fill();
-
-    // 上下端ラベル
-    ctx.fillStyle='rgba(200,230,100,0.85)'; ctx.font=fSm+'px Space Mono,monospace';
-    ctx.textAlign='left'; ctx.textBaseline='middle';
-    const lblX = toCanvasX(xRight) + 2;
-    // 画角ラベルは常にcanvas右端から右揃えで表示
-    ctx.textAlign='right';
-    ctx.fillText(`+${halfFovV.toFixed(1)}°`, W-2, toCanvasY(upperYatRight));
-    ctx.fillText(`-${halfFovV.toFixed(1)}°`, W-2, toCanvasY(lowerYatRight));
-    // 光軸ライン（薄く）
-    const axisYatRight = simViewElev + Math.tan(camAlphaDeg * Math.PI/180) * xRight;
-    ctx.strokeStyle='rgba(200,230,100,0.3)'; ctx.lineWidth=0.8; ctx.setLineDash([1,3]);
-    ctx.beginPath();
-    ctx.moveTo(vpCX, vpCY);
-    ctx.lineTo(toCanvasX(xRight), toCanvasY(axisYatRight));
-    ctx.stroke(); ctx.setLineDash([]);
-  }
-  } // if(gCamAlpha !== null)
-
-  // ── X軸ラベル（距離）── 重なり回避
-  ctx.font=fSm+'px Space Mono,monospace';
-  ctx.textBaseline='top';
-
-  // 視点ラベル
-  ctx.fillStyle='rgba(255,255,255,0.8)';
-  ctx.textAlign='center';
-  ctx.fillText('視点', vpCX, H-MB+4);
-
-  // 筒場・対象のラベル幅を計測
-  const tbLabel = distTube<1 ? Math.round(distTube*1000)+'m' : distTube.toFixed(2)+'km';
-  const tgLabel = distTg<1 ? Math.round(distTg*1000)+'m' : distTg.toFixed(2)+'km';
-  const tbW = Math.max(ctx.measureText('筒場').width, ctx.measureText(tbLabel).width);
-  const tgW = Math.max(ctx.measureText('対象').width, ctx.measureText(tgLabel).width);
-  const gap = 4; // 最低間隔px
-
-  // 重なり判定（center基準）
-  let tbAxisX = tbCX;
-  let tgAxisX = tgCX;
-  const overlap = (tbCX + tbW/2 + gap) > (tgCX - tgW/2);
-
-  if(overlap){
-    // 遠い方（右=tgCX）はそのまま、近い方（左=tbCX）を左にずらす
-    // tgCXの左端からgap分離す
-    const tgAxisLeft = tgCX - tgW/2 - gap;
-    tbAxisX = tgAxisLeft - tbW/2;
-    tbAxisX = Math.max(ML + tbW/2, tbAxisX);
-  }
-
-  // 筒場ラベル描画
-  ctx.fillStyle='#e8874a';
-  ctx.textAlign='center';
-  ctx.fillText('筒場', tbAxisX, H-MB+4);
-  ctx.fillText(tbLabel, tbAxisX, H-MB+4+fSm+2);
-
-  // 対象ラベル描画（対象がある場合のみ）
-  if(tg){
-    ctx.fillStyle='rgba(126,184,232,0.9)';
-    ctx.fillText('対象', tgAxisX, H-MB+4);
-    ctx.fillText(tgLabel, tgAxisX, H-MB+4+fSm+2);
-  }
-
-  // ── 対象頂点の仰角ラベル（対象がある場合のみ）──
-  if(tg && vaTg !== null){
-  ctx.fillStyle='rgba(126,184,232,0.9)'; ctx.font=fSm+'px Space Mono,monospace';
-  ctx.textBaseline='bottom';
-  const tgVaLabel = `対象 ${vaTg.toFixed(1)}°`;
-  const tgLblW = ctx.measureText(tgVaLabel).width;
-  const tgLblX = tgCX + 3;
-  if(tgLblX + tgLblW <= W - 2){
-    ctx.textAlign='left'; ctx.fillText(tgVaLabel, tgLblX, toCanvasY(tgTopY)-2);
-  } else {
-    // 右端を超える場合はシルエットの左側に描く
-    ctx.textAlign='right'; ctx.fillText(tgVaLabel, tgCX - 3, toCanvasY(tgTopY)-2);
-  }
-  } // if(tg)
 } // renderDiag
 
 function niceStep(range, targetSteps){
