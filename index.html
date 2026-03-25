@@ -250,6 +250,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   .mob-sel-btn:active{border-color:var(--ac);}
   .mob-sel-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mob-sbtn-lg{min-width:32px!important;height:26px!important;font-size:13px!important;}
+  .mob-sbtn-xs{min-width:24px!important;height:26px!important;font-size:10px!important;padding:0 2px!important;letter-spacing:-0.02em;}
   .mob-sbtn{flex-shrink:0;min-width:26px;height:26px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--bd);
     border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);
@@ -413,19 +414,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <div class="sl-row">
         <label>左右方向 <span id="lbl-az">0°</span></label>
         <div style="display:flex;align-items:center;gap:4px;">
-          <input type="range" id="sl-az" min="-60" max="60" value="0" step="1" oninput="onSlider()" style="flex:1;">
           <button onclick="resetSlider('sl-az','lbl-az','0°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
-          <button onclick="shiftSlider('sl-az','lbl-az',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−</button>
-          <button onclick="shiftSlider('sl-az','lbl-az',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+</button>
+          <input type="range" id="sl-az" min="-60" max="60" value="0" step="0.1" oninput="onSlider()" style="flex:1;">
+          <button onclick="shiftSlider('sl-az','lbl-az',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">-1</button>
+          <button onclick="shiftSlider('sl-az','lbl-az',-0.1,'°',1)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">-0.1</button>
+          <button onclick="shiftSlider('sl-az','lbl-az',0.1,'°',1)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+0.1</button>
+          <button onclick="shiftSlider('sl-az','lbl-az',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+1</button>
         </div>
       </div>
       <div class="sl-row">
         <label>上下方向 <span id="lbl-el">0°</span></label>
         <div style="display:flex;align-items:center;gap:4px;">
-          <input type="range" id="sl-el" min="-60" max="60" value="0" step="1" oninput="onSlider()" style="flex:1;">
           <button onclick="resetSlider('sl-el','lbl-el','0°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
-          <button onclick="shiftSlider('sl-el','lbl-el',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−</button>
-          <button onclick="shiftSlider('sl-el','lbl-el',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+</button>
+          <input type="range" id="sl-el" min="-60" max="60" value="0" step="0.1" oninput="onSlider()" style="flex:1;">
+          <button onclick="shiftSlider('sl-el','lbl-el',-1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">-1</button>
+          <button onclick="shiftSlider('sl-el','lbl-el',-0.1,'°',1)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">-0.1</button>
+          <button onclick="shiftSlider('sl-el','lbl-el',0.1,'°',1)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+0.1</button>
+          <button onclick="shiftSlider('sl-el','lbl-el',1,'°')" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+1</button>
         </div>
       </div>
       <div class="sl-row">
@@ -439,21 +444,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <div class="sl-row" style="margin-top:6px;">
         <label>三脚高さ <span id="pc-tripod-disp" style="color:var(--ac);cursor:pointer;border-bottom:1px dashed var(--ac);" onclick="openTripodInput()" title="クリックで入力">150cm</span></label>
         <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="shiftTripod(0,true)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
           <button onclick="shiftTripod(-10)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−10</button>
           <button onclick="shiftTripod(-1)"  style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−1</button>
           <button onclick="shiftTripod(1)"   style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+1</button>
           <button onclick="shiftTripod(10)"  style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+10</button>
-          <button onclick="shiftTripod(0,true)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
         </div>
       </div>
       <div class="sl-row">
         <label>標高オフセット <span id="pc-elev-offset-disp" style="color:var(--ac);cursor:pointer;border-bottom:1px dashed var(--ac);" onclick="openElevOffsetInput()" title="クリックで入力">+0m</span></label>
         <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="shiftElevOffset(0,true)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
           <button onclick="shiftElevOffset(-5)"   style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−5</button>
           <button onclick="shiftElevOffset(-1)"   style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">−1</button>
           <button onclick="shiftElevOffset(1)"    style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+1</button>
           <button onclick="shiftElevOffset(5)"    style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;">+5</button>
-          <button onclick="shiftElevOffset(0,true)" style="background:none;border:1px solid var(--bd);color:var(--sub);border-radius:3px;padding:0 5px;cursor:pointer;font-size:10px;line-height:16px;flex-shrink:0;" title="リセット">↺</button>
         </div>
       </div>
     </div>
@@ -539,19 +544,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <span id="mob-lbl-target">対象なし（花火シミュ）▾</span>
     </button>
   </div>
-  <!-- 2行目：左右・上下（スライダーなし） -->
+  <!-- 2行目：左右・上下（4ボタン構成） -->
   <div class="mob-ctrl-row">
-    <span class="mob-ctrl-lbl2">左右</span>
-    <span class="mob-ctrl-val" id="mob-lbl-az">0°</span>
-    <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')">↺</button>
-    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')">−</button>
-    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')">+</button>
-    <span class="mob-ctrl-sep"></span>
-    <span class="mob-ctrl-lbl2">上下</span>
-    <span class="mob-ctrl-val" id="mob-lbl-el">0°</span>
-    <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')">↺</button>
-    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">−</button>
-    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+</button>
+    <span class="mob-ctrl-lbl2">左右<span class="mob-ctrl-val" id="mob-lbl-az" style="margin-left:3px;">0°</span></span>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')">↺</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')">-1</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-0.1,'°',1)">-.1</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',0.1,'°',1)">+.1</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')">+1</button>
+    <span style="flex:1;"></span>
+    <span class="mob-ctrl-lbl2">上下<span class="mob-ctrl-val" id="mob-lbl-el" style="margin-left:3px;">0°</span></span>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')">↺</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">-1</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-0.1,'°',1)">-.1</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',0.1,'°',1)">+.1</button>
+    <button class="mob-sbtn mob-sbtn-xs" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+1</button>
   </div>
   <!-- 3行目：焦点距離＋スライダー＋設定 -->
   <div class="mob-ctrl-row">
@@ -561,8 +568,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <button class="mob-sbtn" onclick="openMobDrawer()" style="min-width:28px;border-color:var(--ac);color:var(--ac);">⚙</button>
   </div>
   <!-- スライダー（非表示・JS用） -->
-  <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" style="display:none;">
-  <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" style="display:none;">
+  <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="0.1" oninput="onMobSlider()" style="display:none;">
+  <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="0.1" oninput="onMobSlider()" style="display:none;">
 </div>
 
 <!-- 大会×筒場ポップアップ -->
@@ -649,7 +656,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
       <span style="font-size:11px;color:var(--sub);font-family:'Space Mono',monospace;">三脚高さ</span>
       <span id="mob-tripod-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">150<span style="font-size:9px;color:var(--sub);">cm</span></span>
-      <button class="mob-now-btn" onclick="shiftTripod(0,true)">Rst</button>
+      <button class="mob-now-btn" onclick="shiftTripod(0,true)">↺</button>
     </div>
     <div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:10px;">
       <button class="mob-tbtn" onclick="shiftTripod(-10)">−10</button>
@@ -664,7 +671,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
       <span style="font-size:11px;color:var(--sub);font-family:'Space Mono',monospace;">標高オフセット</span>
       <span id="mob-elev-offset-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">+0<span style="font-size:9px;color:var(--sub);">m</span></span>
-      <button class="mob-now-btn" onclick="shiftElevOffset(0,true)">Rst</button>
+      <button class="mob-now-btn" onclick="shiftElevOffset(0,true)">↺</button>
     </div>
     <div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:12px;">
       <button class="mob-tbtn" onclick="shiftElevOffset(-5)">−5</button>
@@ -1767,20 +1774,26 @@ function updateElevOffsetDisp(){
 function openElevOffsetInput(){ openElevPad(); }
 
 // スライダーを1ステップ増減
-function shiftSlider(sliderId, lblId, delta, unit){
+function shiftSlider(sliderId, lblId, delta, unit, decimals=0){
   const sl=document.getElementById(sliderId);
   if(!sl) return;
-  sl.value=Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), parseFloat(sl.value)+delta));
+  const raw = parseFloat(sl.value) + delta;
+  const nv = Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), raw));
+  sl.value = nv;
+  const display = decimals>0 ? nv.toFixed(decimals) : String(Math.round(nv));
   const lbl=document.getElementById(lblId);
-  if(lbl) lbl.textContent=(parseFloat(sl.value)>0&&unit==='°'?'+':'')+sl.value+unit;
+  if(lbl) lbl.textContent=(nv>0&&unit==='°'?'+':'')+display+unit;
   onSlider();
 }
-function shiftMobSlider(sliderId, lblId, delta, unit){
+function shiftMobSlider(sliderId, lblId, delta, unit, decimals=0){
   const sl=document.getElementById(sliderId);
   if(!sl) return;
-  sl.value=Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), parseFloat(sl.value)+delta));
+  const raw = parseFloat(sl.value) + delta;
+  const nv = Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), raw));
+  sl.value = nv;
+  const display = decimals>0 ? nv.toFixed(decimals) : String(Math.round(nv));
   const lbl=document.getElementById(lblId);
-  if(lbl) lbl.textContent=(parseFloat(sl.value)>0&&unit==='°'?'+':'')+sl.value+unit;
+  if(lbl) lbl.textContent=(nv>0&&unit==='°'?'+':'')+display+unit;
   onMobSlider();
 }
 
