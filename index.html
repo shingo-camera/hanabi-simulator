@@ -50,7 +50,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
 
 .pb{background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
   color:var(--tx);padding:4px 7px;cursor:pointer;font-family:'Space Mono',monospace;
-  font-size:9px;width:100%;text-align:center;}
+  font-size:11px;width:100%;text-align:center;}
 .pb:hover{border-color:var(--ac);color:var(--ac);}
 .pb.pri{background:rgba(232,135,74,.15);border-color:var(--ac);color:var(--ac);}
 .pb.pri:hover{background:rgba(232,135,74,.25);}
@@ -247,7 +247,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   .mob-sl{flex:1;height:16px;min-width:0;accent-color:var(--ac);}
   .mob-sel-btn{flex:1;min-width:0;height:26px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--bd);
-    border-radius:5px;font-family:'Space Mono',monospace;font-size:10px;
+    border-radius:5px;font-family:'Space Mono',monospace;font-size:11px;
     color:var(--tx);cursor:pointer;padding:0 6px;overflow:hidden;white-space:nowrap;
     text-overflow:ellipsis;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   .mob-sel-btn:active{border-color:var(--ac);}
@@ -263,6 +263,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     justify-content:center;background:var(--sur2);border:1px solid var(--ac);
     border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
     color:var(--ac);cursor:pointer;padding:0;touch-action:manipulation;}
+  /* ドロワー内フォント統一 */
+  #mob-drawer-inner .pb{font-size:11px!important;padding:6px 10px;}
+  #mob-drawer-inner .pb.sm{font-size:11px!important;padding:6px 10px!important;}
+  #mob-drawer-inner select{font-size:11px!important;}
+  #mob-drawer-inner label{font-size:11px!important;}
+  #mob-drawer-inner .ig label{font-size:11px!important;}
+  #mob-drawer-inner input[type=text],
+  #mob-drawer-inner input[type=number]{font-size:16px!important;}
+  .mob-tbtn{font-size:11px!important;}
+  #mob-drawer-inner span[style*="font-size:8"]{font-size:11px!important;}
+
 }
 
 /* landscape-overlay: JS制御（現行ツールと同方式・PCブラウザ縮小誤検知防止） */
@@ -294,7 +305,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);cursor:pointer;
   -webkit-tap-highlight-color:transparent;touch-action:manipulation;padding:0;}
 .mob-tbtn:active{border-color:var(--ac);color:var(--ac);}
-.mob-now-btn{cursor:pointer;font-size:9px;color:var(--ac);border:1px solid var(--ac);
+.mob-now-btn{cursor:pointer;font-size:11px;color:var(--ac);border:1px solid var(--ac);
   border-radius:3px;padding:3px 6px;white-space:nowrap;background:none;
   font-family:'Space Mono',monospace;
   -webkit-tap-highlight-color:transparent;touch-action:manipulation;}
@@ -303,7 +314,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 #mob-drawer-panel::-webkit-scrollbar-thumb{background:var(--bd);}
 .mob-drawer-handle{width:36px;height:4px;background:var(--bd);
   border-radius:2px;margin:0 auto 14px;}
-.mob-sec{font-size:9px;color:var(--ac);text-transform:uppercase;
+.mob-sec{font-size:11px;color:var(--ac);text-transform:uppercase;
   letter-spacing:.08em;margin:10px 0 5px;display:flex;align-items:center;gap:6px;}
 .mob-sec::after{content:'';flex:1;height:1px;background:var(--bd);}
 
@@ -613,8 +624,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
     <!-- 三脚高さ -->
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
-      <span style="font-size:8.5px;color:var(--sub);font-family:'Space Mono',monospace;">三脚高さ</span>
-      <span id="mob-tripod-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">150<span style="font-size:8px;color:var(--sub);">cm</span></span>
+      <span style="font-size:11px;color:var(--sub);font-family:'Space Mono',monospace;">三脚高さ</span>
+      <span id="mob-tripod-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">150<span style="font-size:9px;color:var(--sub);">cm</span></span>
       <button class="mob-now-btn" onclick="shiftTripod(0,true)">Rst</button>
     </div>
     <div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:10px;">
@@ -628,8 +639,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
     <!-- 標高オフセット -->
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
-      <span style="font-size:8.5px;color:var(--sub);font-family:'Space Mono',monospace;">標高オフセット</span>
-      <span id="mob-elev-offset-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">+0<span style="font-size:8px;color:var(--sub);">m</span></span>
+      <span style="font-size:11px;color:var(--sub);font-family:'Space Mono',monospace;">標高オフセット</span>
+      <span id="mob-elev-offset-disp" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);">+0<span style="font-size:9px;color:var(--sub);">m</span></span>
       <button class="mob-now-btn" onclick="shiftElevOffset(0,true)">Rst</button>
     </div>
     <div style="display:flex;gap:2px;flex-wrap:wrap;margin-bottom:12px;">
