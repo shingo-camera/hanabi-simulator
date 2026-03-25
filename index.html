@@ -1171,6 +1171,7 @@ function onFestivalChange(){
   refreshTubeSelect();
   syncSimSelects();
   refreshMapMarkers();
+  calcCamParams();
 }
 
 function refreshFestivalSelects(){
@@ -1328,6 +1329,7 @@ function refreshTubeSelect(){
 function onTubeChange(){
   const tid = document.getElementById('sel-tube').value;
   document.getElementById('btn-edit-tube').disabled = !tid;
+  calcCamParams();
 }
 
 // ==================== 対象物 ====================
@@ -1432,10 +1434,11 @@ function onTargetChange(){
   document.getElementById('btn-edit-target').disabled = !tid;
   syncSimSelects();
   refreshMapMarkers();
+  calcCamParams();
 }
 function refreshTargetSelects(){
   const opts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
-  const empty = '<option value="">-- 対象物を選択 --</option>';
+  const empty = '<option value="">対象なし（花火シミュ）</option>';
   // PC側：現在値を保持
   const pcSel = document.getElementById('sel-target');
   const pcPrev = pcSel ? pcSel.value : '';
@@ -1814,37 +1817,53 @@ function resetSlider(sliderId, lblId, defaultLabel){
 function calcCamParams(){
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
-  if(!fid||!tid){ gCamAlpha=null; gFovV=null; return; }
-  const tg    = db.targets.find(x=>x.id===tid);
-  const tubes = db.tubes.filter(t=>t.festivalId===fid);
-  if(!tg||tubes.length===0){ gCamAlpha=null; gFovV=null; return; }
-
   const isMob  = detectMobile();
   const focal  = isMob?getMobFocal():(parseFloat(document.getElementById('sl-focal').value)||50);
   const elOff  = isMob?getMobEl():(parseFloat(document.getElementById('sl-el').value)||0);
   const r      = Math.PI/180;
-
   const fvV = compMode==='land'?2*Math.atan(24/(2*focal))/r:2*Math.atan(36/(2*focal))/r;
 
+  if(!fid){ gCamAlpha=null; gFovV=null; return; }
+  const tubes = db.tubes.filter(t=>t.festivalId===fid);
   const selTubeId = document.getElementById('sel-tube')?document.getElementById('sel-tube').value:'';
   const selTube   = (selTubeId&&tubes.find(t=>t.id===selTubeId))||tubes[0];
+  if(!selTube){ gCamAlpha=null; gFovV=null; return; }
 
+  const tg = tid ? db.targets.find(x=>x.id===tid) : null;
+
+  // 視点位置
   let simLat, simLng, sElev;
   if(viewManual && viewLat!==null){
     simLat=viewLat; simLng=viewLng;
     sElev=(viewElev||0)+tripodH/100+elevOffset;
-  } else {
+  } else if(tg){
     const az2tube=brng(tg.lat,tg.lng,selTube.lat,selTube.lng);
     const deg1km=1000/111000;
     simLat=tg.lat+Math.cos(az2tube*r)*deg1km;
     simLng=tg.lng+Math.sin(az2tube*r)*deg1km/Math.cos(tg.lat*r);
     sElev=tripodH/100+elevOffset;
+  } else {
+    // 対象なし・視点なし：計算不能
+    gCamAlpha=null; gFovV=null; return;
   }
 
-  const dKm  = hav(simLat,simLng,tg.lat,tg.lng);
-  const vaTop = elAng(dKm, sElev, tg.elev||0, tg.height);
-  gCamAlpha = vaTop + elOff;
-  gFovV     = fvV;
+  if(tg){
+    // 通常：対象頂点仰角を基準
+    const dKm  = hav(simLat,simLng,tg.lat,tg.lng);
+    const vaTop = elAng(dKm, sElev, tg.elev||0, tg.height);
+    gCamAlpha = vaTop + elOff;
+  } else {
+    // 対象なし：選択筒場の最大号数頂点仰角を基準
+    const numRows = selTube.nums.map(n=>db.numTable.find(r=>r.num===n)).filter(Boolean);
+    if(numRows.length===0){ gCamAlpha=elOff; }
+    else {
+      const maxRow = numRows.reduce((a,b)=>a.height>b.height?a:b);
+      const dKm = hav(simLat,simLng,selTube.lat,selTube.lng);
+      const vaTop = elAng(dKm, sElev, selTube.elev||0, maxRow.height + maxRow.dia/2);
+      gCamAlpha = vaTop + elOff;
+    }
+  }
+  gFovV = fvV;
 }
 
 function onSlider(){
@@ -1856,7 +1875,7 @@ function onSlider(){
   document.getElementById('lbl-focal').textContent = focal+'mm';
   const fBtn=document.getElementById('lbl-focal-btn');
   if(fBtn) fBtn.textContent=focal+'mm';
-  if(currentTab==='diag') calcCamParams();
+  calcCamParams();
   layout();
   drawFovLines();
 }
@@ -2177,40 +2196,37 @@ function renderDiag(){
 
   const fid = document.getElementById('sel-festival').value;
   const tid = document.getElementById('sel-target').value;
-  if(!fid||!tid||!viewManual||viewLat===null){
+  if(!fid||!viewManual||viewLat===null){
     ctx.fillStyle='#7a82a0'; ctx.font='10px Space Mono,monospace';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('視点・大会・対象物を', W/2, H/2-7);
+    ctx.fillText('視点・大会を', W/2, H/2-7);
     ctx.fillText('選択してください', W/2, H/2+7);
     ctx.textBaseline='alphabetic'; return;
   }
 
-  const tg    = db.targets.find(x=>x.id===tid);
+  const tg    = tid ? db.targets.find(x=>x.id===tid) : null;
   const tubes = db.tubes.filter(t=>t.festivalId===fid);
   const selTubeId = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
   const tube  = selTubeId ? tubes.find(t=>t.id===selTubeId)||tubes[0] : tubes[0];
-  if(!tg||!tube) return;
+  if(!tube) return;
+  // 対象なし時は筒場の最大号数を仮想ターゲットとして使用
+  const numRowsDiag = tube.nums.map(n=>db.numTable.find(r=>r.num===n)).filter(Boolean);
+  const maxRowDiag = numRowsDiag.length>0 ? numRowsDiag.reduce((a,b)=>a.height>b.height?a:b) : null;
 
   // ── 座標系 ──
-  // 横軸：視点を原点(0)、右方向＝筒場方向
-  // 縦軸：標高(m)
   const simViewElev = viewElev||0;
   const tubeElev    = tube.elev||0;
-  const tgElev      = tg.elev||0;
+  const tgElev      = tg ? (tg.elev||0) : tubeElev;
 
   const distTube = hav(viewLat,viewLng,tube.lat,tube.lng);  // km
-  const distTg   = hav(viewLat,viewLng,tg.lat,tg.lng);      // km
-  // 視点から見て筒場・対象どちらが近いかで横軸方向を決定
-  // 横軸：視点=0、筒場・対象をkm換算でプロット
-  // 視点→筒場方向を正とし、対象は負側にくることもある
+  const distTg   = tg ? hav(viewLat,viewLng,tg.lat,tg.lng) : distTube;
   const azTube = brng(viewLat,viewLng,tube.lat,tube.lng);
-  const azTg   = brng(viewLat,viewLng,tg.lat,tg.lng);
-  // 対象が筒場と同じ側か逆側かを方位差で判定
-  const azDiff = ((azTg - azTube + 540)%360) - 180;
-  const tgSign = Math.cos(azDiff*Math.PI/180) >= 0 ? 1 : -1;
+  const azTg   = tg ? brng(viewLat,viewLng,tg.lat,tg.lng) : azTube;
+  const azDiffVal = ((azTg - azTube + 540)%360) - 180;
+  const tgSign = Math.cos(azDiffVal*Math.PI/180) >= 0 ? 1 : -1;
 
-  const xTube = distTube * 1000;           // m（正）
-  const xTg   = distTg * 1000 * tgSign;   // m（対象の向き）
+  const xTube = distTube * 1000;
+  const xTg   = tg ? distTg * 1000 * tgSign : xTube;
 
   // 各号数の花火頂点高さ
   const numRows = tube.nums.map(n=>db.numTable.find(r=>r.num===n)).filter(Boolean);
@@ -2222,7 +2238,7 @@ function renderDiag(){
                 tubeElev,
                 tubeElev + Math.max(...numRows.map(r=>r.height + r.dia/2), 0),
                 tubeElev + Math.max(...numRows.map(r=>r.height - r.dia/2), 0),
-                tgElev, tgElev + tg.height];
+                ...(tg ? [tgElev, tgElev + tg.height] : [])];
   const xMin = Math.min(...allX); const xMax = Math.max(...allX);
   const yMin = Math.min(...allY); const yMax = Math.max(...allY);
 
@@ -2290,24 +2306,28 @@ function renderDiag(){
     ctx.fillText(`${row.num}号 ${vaFW.toFixed(1)}°`, W-2, toCanvasY(fwY)-2);
   });
 
-  // ── 仰角ライン（視点→対象頂点） ──
-  const tgTopY = tgElev + tg.height;
-  const vaTg = Math.atan2(tgTopY - simViewElev, xTg)*180/Math.PI;
-  ctx.strokeStyle='rgba(126,184,232,0.6)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
-  ctx.beginPath();
-  ctx.moveTo(toCanvasX(0), toCanvasY(simViewElev));
-  ctx.lineTo(toCanvasX(xTg), toCanvasY(tgTopY));
-  ctx.stroke(); ctx.setLineDash([]);
+  // ── 仰角ライン（視点→対象頂点）対象がある場合のみ ──
+  const tgTopY = tg ? tgElev + tg.height : tubeElev + (maxRowDiag ? maxRowDiag.height + maxRowDiag.dia/2 : 0);
+  const vaTg = tg ? Math.atan2(tgTopY - simViewElev, xTg)*180/Math.PI : null;
+  if(tg){
+    ctx.strokeStyle='rgba(126,184,232,0.6)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(0), toCanvasY(simViewElev));
+    ctx.lineTo(toCanvasX(xTg), toCanvasY(tgTopY));
+    ctx.stroke(); ctx.setLineDash([]);
+  }
 
-  // ── 対象物シルエット ──
+  // ── 対象物シルエット（対象がある場合のみ）──
   const tgCX = toCanvasX(xTg);
   const tgCYbase = toCanvasY(tgElev);
   const tgCYtop  = toCanvasY(tgTopY);
   const tgCW = Math.max(4, PW*0.04);
-  ctx.fillStyle='rgba(126,184,232,0.2)';
-  ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.2;
-  ctx.fillRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
-  ctx.strokeRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+  if(tg){
+    ctx.fillStyle='rgba(126,184,232,0.2)';
+    ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.2;
+    ctx.fillRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+    ctx.strokeRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+  }
 
   // ── 筒場＋花火 ──
   const tbCX = toCanvasX(xTube);
@@ -2512,12 +2532,15 @@ function renderDiag(){
   ctx.fillText('筒場', tbAxisX, H-MB+4);
   ctx.fillText(tbLabel, tbAxisX, H-MB+4+fSm+2);
 
-  // 対象ラベル描画
-  ctx.fillStyle='rgba(126,184,232,0.9)';
-  ctx.fillText('対象', tgAxisX, H-MB+4);
-  ctx.fillText(tgLabel, tgAxisX, H-MB+4+fSm+2);
+  // 対象ラベル描画（対象がある場合のみ）
+  if(tg){
+    ctx.fillStyle='rgba(126,184,232,0.9)';
+    ctx.fillText('対象', tgAxisX, H-MB+4);
+    ctx.fillText(tgLabel, tgAxisX, H-MB+4+fSm+2);
+  }
 
-  // ── 対象頂点の仰角ラベル（右端に収まらない場合は左揃え）──
+  // ── 対象頂点の仰角ラベル（対象がある場合のみ）──
+  if(tg && vaTg !== null){
   ctx.fillStyle='rgba(126,184,232,0.9)'; ctx.font=fSm+'px Space Mono,monospace';
   ctx.textBaseline='bottom';
   const tgVaLabel = `対象 ${vaTg.toFixed(1)}°`;
@@ -2529,7 +2552,8 @@ function renderDiag(){
     // 右端を超える場合はシルエットの左側に描く
     ctx.textAlign='right'; ctx.fillText(tgVaLabel, tgCX - 3, toCanvasY(tgTopY)-2);
   }
-}
+  } // if(tg)
+} // renderDiag
 
 function niceStep(range, targetSteps){
   const rough = range / targetSteps;
@@ -2713,6 +2737,16 @@ function openMobTargetPopup(){
   if(!list) return;
   const targetId = document.getElementById('sel-target').value;
   let html = '';
+  // 先頭に「対象なし」
+  const noneSelected = !targetId;
+  html += `<button onclick="selectMobTarget('')"
+    style="display:block;width:100%;text-align:left;padding:8px 16px;
+    background:${noneSelected?'rgba(232,135,74,0.15)':'none'};border:none;
+    font-family:'Space Mono',monospace;font-size:11px;
+    color:${noneSelected?'var(--ac)':'var(--sub)'};cursor:pointer;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+    ${noneSelected?'▶ ':'　'}対象なし（花火シミュ）
+  </button>`;
   db.targets.forEach(t=>{
     const selected = t.id===targetId;
     html += `<button onclick="selectMobTarget('${t.id}')"
@@ -2724,7 +2758,6 @@ function openMobTargetPopup(){
       ${selected?'▶ ':'　'}${escH(t.name)}
     </button>`;
   });
-  if(db.targets.length===0) html = '<div style="padding:12px;text-align:center;font-size:10px;color:var(--sub);">対象物がありません</div>';
   list.innerHTML = html;
   document.getElementById('mob-target-popup').style.display='block';
 }
@@ -2829,7 +2862,7 @@ function onMobSlider(){
   if(slAz)    slAz.value    = az;
   if(slEl)    slEl.value    = el;
   if(slFocal) slFocal.value = focal;
-  if(currentTab==='diag') calcCamParams();
+  calcCamParams();
   layout();
   drawFovLines();
 }
@@ -3140,6 +3173,7 @@ function switchTab(tab){
   } else {
     cvWrap.style.display   = 'none';
     diagWrap.style.display = 'flex';
+    calcCamParams();
   }
   layout();
 }
@@ -3155,7 +3189,7 @@ function setCompMode(o){
   ['btn-port','tab-btn-port'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.classList.toggle('on', o==='port');
   });
-  if(currentTab==='diag') calcCamParams();
+  calcCamParams();
   layout();
   drawFovLines();
 }
