@@ -980,14 +980,15 @@ async function onViewPick(){
   // 現行ツールと同じ青丸＋ラベルマーカー（ドラッグ可能）
   viewMarker = L.marker([viewLat, viewLng],{
     icon: L.divIcon({
-      html:`<div style="display:flex;align-items:center;gap:4px;">
-        <div style="width:12px;height:12px;border-radius:50%;flex-shrink:0;
+      html:`<div style="position:relative;">
+        <div style="position:absolute;top:-6px;left:-6px;width:12px;height:12px;border-radius:50%;
           background:#7eb8e8;border:2px solid white;box-shadow:0 0 8px #7eb8e8;"></div>
-        <div id="vmarker-label" style="background:rgba(10,12,20,.78);border-radius:3px;
+        <div id="vmarker-label" style="position:absolute;top:-30px;left:10px;
+          background:rgba(10,12,20,.78);border-radius:3px;
           padding:2px 6px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;
-          color:#7eb8e8;pointer-events:none;line-height:1.6;">取得中…</div>
+          color:#7eb8e8;pointer-events:none;line-height:1.6;white-space:nowrap;">取得中…</div>
       </div>`,
-      className:'', iconAnchor:[6,6]
+      className:'', iconAnchor:[0,0]
     }),
     draggable: true,
     zIndexOffset: 10000
@@ -1330,6 +1331,7 @@ function onTubeChange(){
   const tid = document.getElementById('sel-tube').value;
   document.getElementById('btn-edit-tube').disabled = !tid;
   calcCamParams();
+  refreshMapMarkers();
 }
 
 // ==================== 対象物 ====================
