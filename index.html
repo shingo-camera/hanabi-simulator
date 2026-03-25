@@ -2409,24 +2409,24 @@ function renderDiag(){
       const color = CV_COLORS[ni % CV_COLORS.length];
       const y = tubeElev + row.height;
       const va = Math.atan2(y - simViewElev, xTube)*180/Math.PI;
-      rItems.push({y, label_m:`${y.toFixed(0)}m`, label_va:`${row.num}号中心 ${va.toFixed(1)}°`, color});
+      rItems.push({y, label_m:`${y.toFixed(0)}m`, label_va:`${row.num}号中心 ${va.toFixed(1)}°/${y.toFixed(0)}m`, color});
     });
     // 最大号数の上端
     if(maxRowDiag2){
       const yTop = tubeElev + maxRowDiag2.height + maxRowDiag2.dia/2;
       const va = Math.atan2(yTop - simViewElev, xTube)*180/Math.PI;
-      rItems.push({y:yTop, label_m:`${yTop.toFixed(0)}m`, label_va:`最大↑ ${va.toFixed(1)}°`, color:'#ffcc44'});
+      rItems.push({y:yTop, label_m:`${yTop.toFixed(0)}m`, label_va:`最大↑${va.toFixed(1)}°/${yTop.toFixed(0)}m`, color:'#ffcc44'});
     }
     // 最大号数の下端
     if(maxRowDiag2){
       const yBot = tubeElev + maxRowDiag2.height - maxRowDiag2.dia/2;
       const va = Math.atan2(yBot - simViewElev, xTube)*180/Math.PI;
-      rItems.push({y:yBot, label_m:`${yBot.toFixed(0)}m`, label_va:`最大↓ ${va.toFixed(1)}°`, color:'#ffcc44'});
+      rItems.push({y:yBot, label_m:`${yBot.toFixed(0)}m`, label_va:`最大↓${va.toFixed(1)}°/${yBot.toFixed(0)}m`, color:'#ffcc44'});
     }
     // 対象頂点
     if(tg && vaTg !== null){
       const y = tgElev + tg.height;
-      rItems.push({y, label_m:`${y.toFixed(0)}m`, label_va:`対象↑ ${vaTg.toFixed(1)}°`, color:'rgba(126,184,232,0.95)'});
+      rItems.push({y, label_m:`${y.toFixed(0)}m`, label_va:`対象↑${vaTg.toFixed(1)}°/${y.toFixed(0)}m`, color:'rgba(126,184,232,0.95)'});
     }
 
     // 仰角高い順（y高い順）にソート
