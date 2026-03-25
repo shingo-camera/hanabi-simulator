@@ -2250,7 +2250,7 @@ function renderDiag(){
   const fMd   = Math.round(11 * scale);  // 通常ラベル
   const fLg   = Math.round(12 * scale);  // 大ラベル
   const ML = Math.round(42 * scale);  // 左：高さ軸ラベル分のみ
-  const MR = Math.round(4  * scale);  // 右：最小限（ラベルはcanvas内で完結）
+  const MR = Math.round(90 * scale);  // 右：右端ラベル（仰角°）分を確保
   const MT = Math.round(fLg * 2);     // 上：上ラベル分
   const MB = Math.round(fSm * 4);     // 下：X軸ラベル分
   const PW = W - ML - MR;
