@@ -395,7 +395,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <div class="ig">
       <label>対象物を選択</label>
       <select id="sel-target" onchange="onTargetChange()">
-        <option value="">-- 対象物を選択 --</option>
+        <option value="">対象なし（花火シミュ）</option>
       </select>
     </div>
     <div class="row2" style="margin-bottom:6px;">
@@ -536,7 +536,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <span id="mob-lbl-tube">大会・筒場 ▾</span>
     </button>
     <button class="mob-sel-btn" id="mob-btn-target" onclick="openMobTargetPopup()">
-      <span id="mob-lbl-target">対象物 ▾</span>
+      <span id="mob-lbl-target">対象なし（花火シミュ）▾</span>
     </button>
   </div>
   <!-- 2行目：左右・上下（スライダーなし） -->
@@ -635,7 +635,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <select id="mob-sel-target" onchange="onMobTargetChange()"
         style="background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
         padding:6px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;width:100%;">
-        <option value="">-- 対象物を選択 --</option>
+        <option value="">対象なし（花火シミュ）</option>
       </select>
     </div>
     <div style="margin-bottom:10px;">
@@ -2732,7 +2732,7 @@ function updateMobBarLabels(){
   }
   const tgBtn = document.getElementById('mob-lbl-target');
   if(tgBtn){
-    tgBtn.textContent = tg ? escH(tg.name.slice(0,10)) + ' ▾' : '対象物 ▾';
+    tgBtn.textContent = tg ? escH(tg.name.slice(0,10)) + ' ▾' : '対象なし（花火シミュ）▾';
   }
 }
 
@@ -2850,7 +2850,7 @@ function refreshMobDrawerSelects(){
   const tgOpts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
   const mobTg = document.getElementById('mob-sel-target');
   if(mobTg){
-    mobTg.innerHTML = '<option value="">-- 対象物を選択 --</option>' + tgOpts;
+    mobTg.innerHTML = '<option value="">対象なし（花火シミュ）</option>' + tgOpts;
     const cur = document.getElementById('sel-target').value;
     if(cur) mobTg.value = cur;
     const hasTg = !!mobTg.value;
