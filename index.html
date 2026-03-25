@@ -1006,6 +1006,7 @@ async function onViewPick(){
 
   // ラベル更新（筒場・対象それぞれの距離を表示）
   updateViewLabel();
+  calcCamParams();
 
   // シミュレーション更新
   layout();
@@ -1139,19 +1140,25 @@ function saveFestival(){
   // 新規なら最後の大会を選択
   if(!editingFestivalId){
     const last = db.festivals[db.festivals.length-1];
-    document.getElementById('sel-festival').value = last.id;
+    // PC・ドロワー両方に新IDをセット
+    const pcFest = document.getElementById('sel-festival');
+    if(pcFest) pcFest.value = last.id;
+    const mobFest = document.getElementById('mob-sel-festival');
+    if(mobFest) mobFest.value = last.id;
     onFestivalChange();
+    updateMobBarLabels();
     // 筒場モーダルから呼ばれた場合：筒場モーダルに戻り新大会を選択
     if(_festivalCalledFrom === 'tube'){
       _festivalCalledFrom = null;
-      // inp-tube-festivalに新大会を選択してモーダルを再開
       const sel = document.getElementById('inp-tube-festival');
       const opts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
       if(sel){ sel.innerHTML = opts; sel.value = last.id; }
       openModal('modal-tube');
     }
   } else {
+    // 編集時：ドロワーも同期
     refreshFestivalSelects();
+    updateMobBarLabels();
     if(_festivalCalledFrom === 'tube'){
       _festivalCalledFrom = null;
       openModal('modal-tube');
@@ -1270,10 +1277,24 @@ function saveTube(){
   saveDB();
   closeModal('modal-tube');
   if(!editingTubeId){ pendingMarker=null; setMapMode('none'); }
+  const isNew = !editingTubeId;
   editingTubeId=null;
   refreshTubeSelect();
+  // 新規登録時は新IDをPC・ドロワー両方にセット
+  if(isNew){
+    const newTube = db.tubes[db.tubes.length-1];
+    const selTube = document.getElementById('sel-tube');
+    if(selTube) selTube.value = newTube.id;
+    const mobTube = document.getElementById('mob-sel-tube');
+    if(mobTube) mobTube.value = newTube.id;
+    onTubeChange();
+  }
+  // ドロワーの大会・筒場セレクトを同期
+  const mobFestV = document.getElementById('mob-sel-festival');
+  if(mobFestV) mobFestV.value = fid;
   refreshMapMarkers();
   syncSimSelects();
+  updateMobBarLabels();
 }
 function openEditTube(){
   const tid = document.getElementById('sel-tube').value;
@@ -1718,6 +1739,7 @@ function _hkUpdateDisp(type){
 function shiftTripod(v, reset=false){
   tripodH = reset ? 150 : Math.max(0, Math.min(500, tripodH+v));
   updateTripodDisp();
+  calcCamParams();
   layout();
 }
 function updateTripodDisp(){
@@ -1731,6 +1753,7 @@ function openTripodInput(){ openTripodPad(); }
 function shiftElevOffset(v, reset=false){
   elevOffset = reset ? 0 : parseFloat((elevOffset+v).toFixed(2));
   updateElevOffsetDisp();
+  calcCamParams();
   layout();
 }
 function updateElevOffsetDisp(){
