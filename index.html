@@ -214,7 +214,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* ===== スマホ専用レイアウト ===== */
 @media(max-width:600px){
-  :root{--hdr:0px;--mob-bar:104px;}
+  :root{--hdr:0px;--mob-bar:108px;}
   #hdr{display:none;}
   #pnl{display:none;}
   #wrap{top:0;bottom:var(--mob-bar);}
@@ -236,19 +236,32 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     font-family:'Space Mono',monospace;font-size:9px;
     -webkit-tap-highlight-color:transparent;}
   #tab-orient .tab-ob.on{border-color:var(--ac);color:var(--ac);background:rgba(232,135,74,0.12);}
-  .mob-ctrl-row{display:flex;align-items:center;gap:3px;height:24px;}
-  .mob-ctrl-lbl{font-family:'Space Mono',monospace;font-size:8px;color:var(--sub);
+  .mob-ctrl-row{display:flex;align-items:center;gap:3px;height:28px;}
+  .mob-ctrl-lbl{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);
     flex-shrink:0;min-width:52px;white-space:nowrap;}
+  .mob-ctrl-lbl2{font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);
+    flex-shrink:0;white-space:nowrap;}
+  .mob-ctrl-val{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+    color:var(--ac);flex-shrink:0;min-width:32px;text-align:center;}
+  .mob-ctrl-sep{flex:1;}
   .mob-sl{flex:1;height:16px;min-width:0;accent-color:var(--ac);}
-  .mob-sbtn{flex-shrink:0;min-width:26px;height:22px;display:flex;align-items:center;
+  .mob-sel-btn{flex:1;min-width:0;height:26px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--bd);
-    border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);
+    border-radius:5px;font-family:'Space Mono',monospace;font-size:10px;
+    color:var(--tx);cursor:pointer;padding:0 6px;overflow:hidden;white-space:nowrap;
+    text-overflow:ellipsis;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  .mob-sel-btn:active{border-color:var(--ac);}
+  .mob-sel-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mob-sbtn-lg{min-width:32px!important;height:26px!important;font-size:13px!important;}
+  .mob-sbtn{flex-shrink:0;min-width:26px;height:26px;display:flex;align-items:center;
+    justify-content:center;background:var(--sur2);border:1px solid var(--bd);
+    border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);
     cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0;
     touch-action:manipulation;}
   .mob-sbtn:active{border-color:var(--ac);color:var(--ac);}
-  .mob-focal-disp{flex-shrink:0;min-width:44px;height:22px;display:flex;align-items:center;
+  .mob-focal-disp{flex-shrink:0;min-width:48px;height:26px;display:flex;align-items:center;
     justify-content:center;background:var(--sur2);border:1px solid var(--ac);
-    border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
+    border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
     color:var(--ac);cursor:pointer;padding:0;touch-action:manipulation;}
 }
 
@@ -483,29 +496,63 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 <!-- スマホ用ボトムバー（mob-bar） -->
 <div id="mob-bar">
-  <!-- 1行目：左右 -->
+  <!-- 1行目：花火大会×筒場 ＋ 対象 -->
   <div class="mob-ctrl-row">
-    <span class="mob-ctrl-lbl">左右 <span id="mob-lbl-az">0°</span></span>
-    <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" class="mob-sl">
+    <button class="mob-sel-btn" id="mob-btn-tube" onclick="openMobTubePopup()">
+      <span id="mob-lbl-tube">大会・筒場 ▾</span>
+    </button>
+    <button class="mob-sel-btn" id="mob-btn-target" onclick="openMobTargetPopup()">
+      <span id="mob-lbl-target">対象物 ▾</span>
+    </button>
+  </div>
+  <!-- 2行目：左右・上下（スライダーなし） -->
+  <div class="mob-ctrl-row">
+    <span class="mob-ctrl-lbl2">左右</span>
+    <span class="mob-ctrl-val" id="mob-lbl-az">0°</span>
     <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-az','mob-lbl-az','0°','0')">↺</button>
-    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')">−</button>
-    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')">+</button>
-  </div>
-  <!-- 2行目：上下 -->
-  <div class="mob-ctrl-row">
-    <span class="mob-ctrl-lbl">上下 <span id="mob-lbl-el">0°</span></span>
-    <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" class="mob-sl">
+    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',-1,'°')">−</button>
+    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-az','mob-lbl-az',1,'°')">+</button>
+    <span class="mob-ctrl-sep"></span>
+    <span class="mob-ctrl-lbl2">上下</span>
+    <span class="mob-ctrl-val" id="mob-lbl-el">0°</span>
     <button class="mob-sbtn" onclick="resetMobSlider('mob-sl-el','mob-lbl-el','0°','0')">↺</button>
-    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">−</button>
-    <button class="mob-sbtn" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+</button>
+    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',-1,'°')">−</button>
+    <button class="mob-sbtn mob-sbtn-lg" onclick="shiftMobSlider('mob-sl-el','mob-lbl-el',1,'°')">+</button>
   </div>
-  <!-- 3行目：焦点距離＋設定ボタン -->
+  <!-- 3行目：焦点距離＋スライダー＋設定 -->
   <div class="mob-ctrl-row">
     <button class="mob-focal-disp" onclick="openFocalPad('mob')" id="mob-lbl-focal-btn">50mm</button>
     <input type="range" id="mob-sl-focal" min="9" max="1200" value="50" step="1" oninput="onMobSlider()" class="mob-sl">
     <span id="mob-lbl-focal" style="display:none;">50mm</span>
     <button class="mob-sbtn" onclick="openMobDrawer()" style="min-width:28px;border-color:var(--ac);color:var(--ac);">⚙</button>
   </div>
+  <!-- スライダー（非表示・JS用） -->
+  <input type="range" id="mob-sl-az" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" style="display:none;">
+  <input type="range" id="mob-sl-el" min="-60" max="60" value="0" step="1" oninput="onMobSlider()" style="display:none;">
+</div>
+
+<!-- 大会×筒場ポップアップ -->
+<div id="mob-tube-popup" style="display:none;position:fixed;bottom:calc(var(--mob-bar) + 4px);left:4px;right:4px;
+  background:var(--sur);border:1px solid var(--bd);border-radius:10px;
+  z-index:9200;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:8px 0;box-shadow:0 -4px 20px rgba(0,0,0,.6);">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 12px 6px;border-bottom:1px solid var(--bd);">
+    <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);">🎆 花火大会 × 筒場</span>
+    <button onclick="closeMobTubePopup()" style="background:none;border:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0 4px;">✕</button>
+  </div>
+  <div id="mob-tube-popup-list" style="padding:4px 0;"></div>
+</div>
+
+<!-- 対象ポップアップ -->
+<div id="mob-target-popup" style="display:none;position:fixed;bottom:calc(var(--mob-bar) + 4px);left:4px;right:4px;
+  background:var(--sur);border:1px solid var(--bd);border-radius:10px;
+  z-index:9200;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:8px 0;box-shadow:0 -4px 20px rgba(0,0,0,.6);">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 12px 6px;border-bottom:1px solid var(--bd);">
+    <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);">🏢 対象物</span>
+    <button onclick="closeMobTargetPopup()" style="background:none;border:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0 4px;">✕</button>
+  </div>
+  <div id="mob-target-popup-list" style="padding:4px 0;"></div>
 </div>
 
 <!-- スマホ用ドロワー -->
@@ -608,25 +655,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 </div>
 
 <!-- ===== モーダル: 新規大会 ===== -->
-<div class="modal-overlay" id="modal-festival">
-  <div class="modal">
-    <h2>🎆 花火大会を登録</h2>
-    <div class="mig">
-      <label>大会名</label>
-      <input type="text" id="inp-festival-name" placeholder="例：○○花火大会 2025">
-    </div>
-    <div class="mig">
-      <label>メモ（任意）</label>
-      <input type="text" id="inp-festival-memo" placeholder="例：8月15日・淀川">
-    </div>
-    <div class="modal-btns">
-      <button class="pb" onclick="closeModal('modal-festival')">キャンセル</button>
-      <button class="pb danger" id="btn-delete-festival" style="display:none;" onclick="deleteFestival()">削除</button>
-      <button class="pb pri" onclick="saveFestival()">登録</button>
-    </div>
-  </div>
-</div>
-
 <!-- ===== モーダル: 筒場追加（地図クリック後） ===== -->
 <div class="modal-overlay" id="modal-tube">
   <div class="modal">
@@ -637,7 +665,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     </div>
     <div class="mig">
       <label>大会</label>
-      <select id="inp-tube-festival"></select>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <select id="inp-tube-festival" style="flex:1;min-width:0;"></select>
+        <button class="pb sm" onclick="openFestivalFromTube()" style="flex-shrink:0;white-space:nowrap;">＋ 新規</button>
+      </div>
     </div>
     <div class="mig" id="tube-elev-row">
       <label>地面標高</label>
@@ -720,6 +751,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <button class="pb sm pri" onclick="saveNumTable()">保存</button>
     </div>
     <button class="pb" onclick="closeModal('modal-settings')">閉じる</button>
+  </div>
+</div>
+
+<!-- ===== モーダル: 花火大会登録（最前面：他モーダルから呼ばれる） ===== -->
+<div class="modal-overlay" id="modal-festival">
+  <div class="modal">
+    <h2>🎆 花火大会を登録</h2>
+    <div class="mig">
+      <label>大会名</label>
+      <input type="text" id="inp-festival-name" placeholder="例：○○花火大会 2025">
+    </div>
+    <div class="mig">
+      <label>メモ（任意）</label>
+      <input type="text" id="inp-festival-memo" placeholder="例：8月15日・淀川">
+    </div>
+    <div class="modal-btns">
+      <button class="pb" onclick="cancelFestivalFromModal()">キャンセル</button>
+      <button class="pb danger" id="btn-delete-festival" style="display:none;" onclick="deleteFestival()">削除</button>
+      <button class="pb pri" onclick="saveFestival()">登録</button>
+    </div>
   </div>
 </div>
 
@@ -977,6 +1028,24 @@ let editingFestivalId = null;
 let pendingTubeLat=null, pendingTubeLng=null, pendingTubeElev=0;
 let pendingTargetLat=null, pendingTargetLng=null, pendingTargetElev=0;
 
+// 筒場モーダルから新規大会を開く（保存後に筒場モーダルに戻る）
+let _festivalCalledFrom = null; // 'tube' | null
+
+function openFestivalFromTube(){
+  _festivalCalledFrom = 'tube';
+  openAddFestival();
+}
+
+function cancelFestivalFromModal(){
+  closeModal('modal-festival');
+  if(_festivalCalledFrom === 'tube'){
+    _festivalCalledFrom = null;
+    openModal('modal-tube');
+  } else {
+    _festivalCalledFrom = null;
+  }
+}
+
 function openAddFestival(){
   editingFestivalId = null;
   document.getElementById('inp-festival-name').value='';
@@ -1035,8 +1104,21 @@ function saveFestival(){
     const last = db.festivals[db.festivals.length-1];
     document.getElementById('sel-festival').value = last.id;
     onFestivalChange();
+    // 筒場モーダルから呼ばれた場合：筒場モーダルに戻り新大会を選択
+    if(_festivalCalledFrom === 'tube'){
+      _festivalCalledFrom = null;
+      // inp-tube-festivalに新大会を選択してモーダルを再開
+      const sel = document.getElementById('inp-tube-festival');
+      const opts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
+      if(sel){ sel.innerHTML = opts; sel.value = last.id; }
+      openModal('modal-tube');
+    }
   } else {
     refreshFestivalSelects();
+    if(_festivalCalledFrom === 'tube'){
+      _festivalCalledFrom = null;
+      openModal('modal-tube');
+    }
   }
 }
 
@@ -1492,6 +1574,8 @@ function drawFovLines(){
 
 // ==================== シミュレーター同期 ====================
 function syncSimSelects(){
+  // スマホmob-barラベルも更新
+  if(typeof updateMobBarLabels==='function') updateMobBarLabels();
   // 左パネル変更時にシミュレーター・断面図を再描画
   layout();
 }
@@ -2468,6 +2552,121 @@ function closeMobDrawerBg(e){
 }
 
 
+// ==================== スマホ用クイック選択ポップアップ ====================
+
+function updateMobBarLabels(){
+  // 1行目ラベル更新
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+  const targetId = document.getElementById('sel-target').value;
+
+  const fest = db.festivals.find(f=>f.id===fid);
+  const tube = db.tubes.find(t=>t.id===tid);
+  const tg   = db.targets.find(t=>t.id===targetId);
+
+  const tubeBtn = document.getElementById('mob-lbl-tube');
+  if(tubeBtn){
+    if(fest && tube) tubeBtn.textContent = escH(fest.name.slice(0,8)) + '×' + escH(tube.name.slice(0,6)) + ' ▾';
+    else if(fest)    tubeBtn.textContent = escH(fest.name.slice(0,10)) + ' ▾';
+    else             tubeBtn.textContent = '大会・筒場 ▾';
+  }
+  const tgBtn = document.getElementById('mob-lbl-target');
+  if(tgBtn){
+    tgBtn.textContent = tg ? escH(tg.name.slice(0,10)) + ' ▾' : '対象物 ▾';
+  }
+}
+
+function openMobTubePopup(){
+  closeMobTargetPopup();
+  const list = document.getElementById('mob-tube-popup-list');
+  if(!list) return;
+  const fid = document.getElementById('sel-festival').value;
+  const tid = document.getElementById('sel-tube') ? document.getElementById('sel-tube').value : '';
+  let html = '';
+  db.festivals.forEach(f=>{
+    const tubes = db.tubes.filter(t=>t.festivalId===f.id);
+    html += `<div style="padding:4px 12px;font-family:'Space Mono',monospace;font-size:9px;color:var(--sub);">${escH(f.name)}</div>`;
+    if(tubes.length===0){
+      html += `<div style="padding:3px 20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--sub);opacity:0.5;">（筒場なし）</div>`;
+    }
+    tubes.forEach(t=>{
+      const selected = t.id===tid;
+      html += `<button onclick="selectMobTube('${f.id}','${t.id}')"
+        style="display:block;width:100%;text-align:left;padding:8px 20px;
+        background:${selected?'rgba(232,135,74,0.15)':'none'};border:none;
+        font-family:'Space Mono',monospace;font-size:11px;
+        color:${selected?'var(--ac)':'var(--tx)'};cursor:pointer;
+        -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+        ${selected?'▶ ':'　'}${escH(t.name)}
+      </button>`;
+    });
+  });
+  if(db.festivals.length===0) html = '<div style="padding:12px;text-align:center;font-size:10px;color:var(--sub);">大会がありません</div>';
+  list.innerHTML = html;
+  document.getElementById('mob-tube-popup').style.display='block';
+}
+
+function closeMobTubePopup(){
+  const p=document.getElementById('mob-tube-popup');
+  if(p) p.style.display='none';
+}
+
+function selectMobTube(fid, tid){
+  // 大会選択
+  const selFest=document.getElementById('sel-festival');
+  if(selFest){ selFest.value=fid; onFestivalChange(); }
+  // 筒場選択
+  setTimeout(()=>{
+    const selTube=document.getElementById('sel-tube');
+    if(selTube){ selTube.value=tid; onTubeChange(); }
+    // ドロワー内も同期
+    const mobFest=document.getElementById('mob-sel-festival');
+    if(mobFest){ mobFest.value=fid; onMobFestivalChange(); }
+    setTimeout(()=>{
+      const mobTube=document.getElementById('mob-sel-tube');
+      if(mobTube){ mobTube.value=tid; onMobTubeChange(); }
+    },50);
+  },50);
+  closeMobTubePopup();
+  updateMobBarLabels();
+}
+
+function openMobTargetPopup(){
+  closeMobTubePopup();
+  const list = document.getElementById('mob-target-popup-list');
+  if(!list) return;
+  const targetId = document.getElementById('sel-target').value;
+  let html = '';
+  db.targets.forEach(t=>{
+    const selected = t.id===targetId;
+    html += `<button onclick="selectMobTarget('${t.id}')"
+      style="display:block;width:100%;text-align:left;padding:8px 16px;
+      background:${selected?'rgba(232,135,74,0.15)':'none'};border:none;
+      font-family:'Space Mono',monospace;font-size:11px;
+      color:${selected?'var(--ac)':'var(--tx)'};cursor:pointer;
+      -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+      ${selected?'▶ ':'　'}${escH(t.name)}
+    </button>`;
+  });
+  if(db.targets.length===0) html = '<div style="padding:12px;text-align:center;font-size:10px;color:var(--sub);">対象物がありません</div>';
+  list.innerHTML = html;
+  document.getElementById('mob-target-popup').style.display='block';
+}
+
+function closeMobTargetPopup(){
+  const p=document.getElementById('mob-target-popup');
+  if(p) p.style.display='none';
+}
+
+function selectMobTarget(targetId){
+  const sel=document.getElementById('sel-target');
+  if(sel){ sel.value=targetId; onTargetChange(); }
+  const mobSel=document.getElementById('mob-sel-target');
+  if(mobSel){ mobSel.value=targetId; onMobTargetChange(); }
+  closeMobTargetPopup();
+  updateMobBarLabels();
+}
+
 function refreshMobDrawerSelects(){
   // 大会
   const festOpts = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
@@ -3099,6 +3298,9 @@ function init(){
   // 正面プレビューと横断面図それぞれに適用
   initCanvasPinch('sim-clip','sim-inner','sim-canvas');
   initCanvasPinch('diag-clip','diag-inner','diag-canvas');
+
+  // mob-barラベル初期化
+  if(detectMobile()) updateMobBarLabels();
 }
 init();
 </script>
