@@ -274,6 +274,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   .mob-tbtn{font-size:11px!important;}
   #mob-drawer-inner span[style*="font-size:8"]{font-size:11px!important;}
 
+  /* ===== スマホ全体フォント統一 ===== */
+  .sim-tab{font-size:11px!important;}
+  .tab-ob{font-size:11px!important;padding:4px 12px!important;}
+  .mm-btn{font-size:11px!important;padding:4px 10px!important;}
+  #sim-tab-info{font-size:9px!important;}
+  #sim-info{font-size:9px!important;}
+  .modal h2{font-size:13px!important;}
+  .modal .mig label{font-size:11px!important;}
+  .modal .ig label{font-size:11px!important;}
+  .modal .mig select{font-size:14px!important;}
+  .modal .mig input{font-size:14px!important;}
+  .modal p{font-size:11px!important;}
+  .modal .pb{font-size:11px!important;padding:6px 12px!important;}
+  .modal .pb.sm{font-size:11px!important;padding:5px 10px!important;}
+  .num-cb span{font-size:11px!important;}
+  .num-cb{padding:5px 8px!important;}
+  .num-grid{gap:5px!important;}
+  .num-table{font-size:11px!important;}
+  .num-table input{font-size:12px!important;width:80px!important;}
+  .ti-name{font-size:11px!important;}
+  .ti-nums{font-size:10px!important;}
+  .map-popup h3{font-size:11px!important;}
+  .map-popup .mig label{font-size:11px!important;}
+  .map-popup .mig select{font-size:13px!important;}
+  .sec{font-size:11px!important;}
+  #mob-drawer-header span{font-size:11px!important;}
+  .mob-sec{font-size:11px!important;}
+
 }
 
 /* landscape-overlay: JS制御（現行ツールと同方式・PCブラウザ縮小誤検知防止） */
@@ -473,8 +501,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
     <!-- プレビューパネル -->
     <div id="sim-panel">
       <div id="sim-tabs">
-        <div class="sim-tab active" id="tab-cam" onclick="switchTab('cam')">◎ 正面プレビュー</div>
-        <div class="sim-tab diag" id="tab-diag" onclick="switchTab('diag')">╌ 横断面図</div>
+        <div class="sim-tab diag active" id="tab-diag" onclick="switchTab('diag')">╌ 横断面図</div>
+        <div class="sim-tab" id="tab-cam" onclick="switchTab('cam')">◎ 正面プレビュー</div>
         <span id="sim-tab-info"></span>
         <div id="tab-orient" style="display:none;margin-left:auto;gap:3px;padding:0 8px;align-items:center;">
           <div class="tab-ob on" id="tab-btn-land" onclick="setCompMode('land')">横</div>
@@ -3058,7 +3086,7 @@ async function getElev(lat,lng){
 }
 
 // ==================== リサイズ ====================
-let currentTab = 'cam'; // 'cam' or 'diag'
+let currentTab = 'diag'; // 'cam' or 'diag'
 
 function switchTab(tab){
   currentTab = tab;
