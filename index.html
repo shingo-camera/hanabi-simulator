@@ -1219,11 +1219,12 @@ async function openAddTubeModal(lat,lng){
   document.getElementById('inp-tube-name').value='';
   document.getElementById('tube-elev-disp').textContent='取得中…';
   document.getElementById('btn-tube-delete').style.display='none';
-  // 大会選択を現在選択中に
+  // 大会選択：現在選択中をデフォルト、未選択なら空選択
   const fid = document.getElementById('sel-festival').value;
   const sel = document.getElementById('inp-tube-festival');
-  sel.innerHTML = db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
-  if(fid) sel.value=fid;
+  sel.innerHTML = '<option value="">-- 大会を選択 --</option>' +
+    db.festivals.map(f=>`<option value="${f.id}">${escH(f.name)}</option>`).join('');
+  sel.value = fid || '';
   buildNumGrid('tube-num-grid',[]);
   openModal('modal-tube');
   setTimeout(()=>document.getElementById('inp-tube-name').focus(),100);
