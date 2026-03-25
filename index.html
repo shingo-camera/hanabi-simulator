@@ -2551,17 +2551,24 @@ function renderDiag(){
   const tgW = Math.max(ctx.measureText('対象').width, ctx.measureText(tgLabel).width);
   const gap = 4; // 最低間隔px
 
-  // 重なり判定（center基準）
+  // 重なり判定（左右どちらが近いかで動的に判定）
   let tbAxisX = tbCX;
   let tgAxisX = tgCX;
-  const overlap = (tbCX + tbW/2 + gap) > (tgCX - tgW/2);
 
-  if(overlap){
-    // 遠い方（右=tgCX）はそのまま、近い方（左=tbCX）を左にずらす
-    // tgCXの左端からgap分離す
-    const tgAxisLeft = tgCX - tgW/2 - gap;
-    tbAxisX = tgAxisLeft - tbW/2;
-    tbAxisX = Math.max(ML + tbW/2, tbAxisX);
+  if(tg){
+    // 左右を比較：左にある方をleft、右をrightとして処理
+    const leftCX  = tbCX < tgCX ? tbCX  : tgCX;
+    const rightCX = tbCX < tgCX ? tgCX  : tbCX;
+    const leftW   = tbCX < tgCX ? tbW   : tgW;
+    const rightW  = tbCX < tgCX ? tgW   : tbW;
+    const overlap = (leftCX + leftW/2 + gap) > (rightCX - rightW/2);
+    if(overlap){
+      // 右はそのまま、左をずらす
+      const rightLeft = rightCX - rightW/2 - gap;
+      const newLeftCX = Math.max(ML + leftW/2, rightLeft - leftW/2);
+      if(tbCX < tgCX) tbAxisX = newLeftCX;
+      else             tgAxisX = newLeftCX;
+    }
   }
 
   // 筒場ラベル描画
