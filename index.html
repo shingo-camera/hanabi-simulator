@@ -2476,22 +2476,45 @@ function renderDiag(){
   }
   } // if(gCamAlpha !== null)
 
-  // ── X軸ラベル（距離） ──
-  ctx.fillStyle='rgba(122,130,160,0.8)'; ctx.font=fSm+'px Space Mono,monospace';
-  ctx.textAlign='center'; ctx.textBaseline='top';
-  // 視点
+  // ── X軸ラベル（距離）── 重なり回避
+  ctx.font=fSm+'px Space Mono,monospace';
+  ctx.textBaseline='top';
+
+  // 視点ラベル
   ctx.fillStyle='rgba(255,255,255,0.8)';
+  ctx.textAlign='center';
   ctx.fillText('視点', vpCX, H-MB+4);
-  // 筒場
-  ctx.fillStyle='#e8874a';
+
+  // 筒場・対象のラベル幅を計測
   const tbLabel = distTube<1 ? Math.round(distTube*1000)+'m' : distTube.toFixed(2)+'km';
-  ctx.fillText('筒場', tbCX, H-MB+4);
-  ctx.fillText(tbLabel, tbCX, H-MB+4+fSm+2);
-  // 対象
-  ctx.fillStyle='rgba(126,184,232,0.9)';
   const tgLabel = distTg<1 ? Math.round(distTg*1000)+'m' : distTg.toFixed(2)+'km';
-  ctx.fillText('対象', tgCX, H-MB+4);
-  ctx.fillText(tgLabel, tgCX, H-MB+4+fSm+2);
+  const tbW = Math.max(ctx.measureText('筒場').width, ctx.measureText(tbLabel).width);
+  const tgW = Math.max(ctx.measureText('対象').width, ctx.measureText(tgLabel).width);
+  const gap = 4; // 最低間隔px
+
+  // 重なり判定（center基準）
+  let tbAxisX = tbCX;
+  let tgAxisX = tgCX;
+  const overlap = (tbCX + tbW/2 + gap) > (tgCX - tgW/2);
+
+  if(overlap){
+    // 遠い方（右=tgCX）はそのまま、近い方（左=tbCX）を左にずらす
+    // tgCXの左端からgap分離す
+    const tgAxisLeft = tgCX - tgW/2 - gap;
+    tbAxisX = tgAxisLeft - tbW/2;
+    tbAxisX = Math.max(ML + tbW/2, tbAxisX);
+  }
+
+  // 筒場ラベル描画
+  ctx.fillStyle='#e8874a';
+  ctx.textAlign='center';
+  ctx.fillText('筒場', tbAxisX, H-MB+4);
+  ctx.fillText(tbLabel, tbAxisX, H-MB+4+fSm+2);
+
+  // 対象ラベル描画
+  ctx.fillStyle='rgba(126,184,232,0.9)';
+  ctx.fillText('対象', tgAxisX, H-MB+4);
+  ctx.fillText(tgLabel, tgAxisX, H-MB+4+fSm+2);
 
   // ── 対象頂点の仰角ラベル（右端に収まらない場合は左揃え）──
   ctx.fillStyle='rgba(126,184,232,0.9)'; ctx.font=fSm+'px Space Mono,monospace';
