@@ -738,23 +738,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <div id="target-elev-disp" style="font-size:10px;color:var(--ac2);padding:3px 0;">取得中…</div>
     </div>
     <div class="mig">
-      <label>建物高さ (m)</label>
+      <label>建物高さ [m] <span style="color:var(--ac);">※必須</span></label>
       <input type="number" id="inp-target-height" placeholder="例：103" min="1" max="2000">
     </div>
     <div class="mig">
-      <label>幅 (m)　※縦・横共通</label>
-      <input type="number" id="inp-target-width" placeholder="例：20" min="1" max="5000">
+      <label>幅 [m]　※任意　プレビューの横の重なりに反映</label>
+      <input type="number" id="inp-target-width" placeholder="デフォルト: 10" min="1" max="5000">
     </div>
     <div class="mig">
-      <label>形状</label>
-      <select id="inp-target-shape">
-        <option value="box">四角柱</option>
+      <label>形状　※任意　プレビューの見え方に反映</label>
+      <select id="inp-target-shape" onchange="onTargetShapeChange()">
         <option value="cylinder">円柱</option>
+        <option value="box">四角柱</option>
         <option value="cone">円錐</option>
       </select>
     </div>
-    <div class="mig">
-      <label>建物の向き（正面の向く方角）</label>
+    <div class="mig" id="target-frontaz-row">
+      <label>建物の向き　※任意　プレビューの見え方に反映</label>
       <select id="inp-target-frontaz">
         <option value="0">北 (N)</option>
         <option value="45">北東 (NE)</option>
@@ -1337,9 +1337,10 @@ async function openAddTargetModal(lat,lng){
   document.getElementById('target-modal-title').textContent='🏢 対象物を登録';
   document.getElementById('inp-target-name').value='';
   document.getElementById('inp-target-height').value='';
-  document.getElementById('inp-target-shape').value='box';
-  document.getElementById('inp-target-width').value='';
+  document.getElementById('inp-target-shape').value='cylinder';
+  document.getElementById('inp-target-width').value='10';
   document.getElementById('inp-target-frontaz').value='0';
+  onTargetShapeChange();
   document.getElementById('btn-target-delete').style.display='none';
   document.getElementById('target-elev-disp').textContent='取得中…';
   openModal('modal-target');
@@ -1348,6 +1349,12 @@ async function openAddTargetModal(lat,lng){
   try{ pendingTargetElev = await getElev(lat,lng); }catch(e){ pendingTargetElev=0; }
   document.getElementById('target-elev-disp').textContent=`${pendingTargetElev.toFixed(1)} m`;
 }
+function onTargetShapeChange(){
+  const shape = document.getElementById('inp-target-shape').value;
+  const row = document.getElementById('target-frontaz-row');
+  if(row) row.style.display = (shape==='cylinder'||shape==='cone') ? 'none' : '';
+}
+
 function cancelAddTarget(){
   closeModal('modal-target');
   if(!editingTargetId && pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
@@ -1357,10 +1364,11 @@ function cancelAddTarget(){
 function saveTarget(){
   const name    = document.getElementById('inp-target-name').value.trim();
   const height  = parseFloat(document.getElementById('inp-target-height').value);
-  const width   = parseFloat(document.getElementById('inp-target-width').value)||20;
+  const width   = parseFloat(document.getElementById('inp-target-width').value)||10;
   const depth   = width; // 奥行=幅で統一
-  const shape   = document.getElementById('inp-target-shape').value||'box';
-  const frontAz = parseInt(document.getElementById('inp-target-frontaz').value)||0;
+  const shape   = document.getElementById('inp-target-shape').value||'cylinder';
+  // 円柱・円錐は向き不問なので北固定
+  const frontAz = (shape==='cylinder'||shape==='cone') ? 0 : (parseInt(document.getElementById('inp-target-frontaz').value)||0);
   if(!name){alert('名前を入力してください');return;}
   if(!height||height<=0){alert('高さを入力してください');return;}
   if(editingTargetId){
@@ -1408,10 +1416,11 @@ function openEditTarget(){
   document.getElementById('inp-target-name').value = tg.name;
   document.getElementById('inp-target-height').value = tg.height||'';
   document.getElementById('inp-target-width').value = tg.width||tg.depth||'';
-  document.getElementById('inp-target-shape').value = tg.shape||'box';
+  document.getElementById('inp-target-shape').value = tg.shape||'cylinder';
   document.getElementById('inp-target-frontaz').value = String(tg.frontAz||0);
   document.getElementById('target-elev-disp').textContent = `${(tg.elev||0).toFixed(1)} m`;
   document.getElementById('btn-target-delete').style.display='inline-block';
+  onTargetShapeChange();
   openModal('modal-target');
   setTimeout(()=>document.getElementById('inp-target-name').focus(),100);
 }
