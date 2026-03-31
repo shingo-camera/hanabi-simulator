@@ -754,7 +754,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <option value="cylinder">円柱</option>
         <option value="box">四角柱</option>
         <option value="cone">円錐</option>
-        <option value="person">人物（女性）</option>
+        <option value="person">人物</option>
       </select>
     </div>
     <div class="mig" id="target-frontaz-row">
@@ -964,6 +964,15 @@ function initMap(){
 
 function onMapClick(e){
   const {lat,lng} = e.latlng;
+  if(_mapMode === 'tube'){
+    openAddTubeModal(lat, lng);
+    return;
+  }
+  if(_mapMode === 'target'){
+    openAddTargetModal(lat, lng);
+    return;
+  }
+  // 通常クリック：視点設定
   viewLat = lat;
   viewLng = lng;
   viewManual = true;
@@ -1206,6 +1215,17 @@ function refreshFestivalSelects(){
 }
 
 // ==================== 筒場 ====================
+// ==================== 地図モード管理 ====================
+let _mapMode = 'none'; // 'none' | 'tube' | 'target'
+function setMapMode(mode){
+  _mapMode = mode;
+  // ボタンのアクティブ状態
+  const btnTube   = document.getElementById('mm-tube');
+  const btnTarget = document.getElementById('mm-target');
+  if(btnTube)   btnTube.classList.toggle('active', mode==='tube');
+  if(btnTarget) btnTarget.classList.toggle('active', mode==='target');
+}
+
 function startAddTube(){
   setMapMode('tube');
 }
@@ -1286,15 +1306,23 @@ function saveTube(){
   closeModal('modal-tube');
   if(!editingTubeId){ pendingMarker=null; setMapMode('none'); }
   const isNew = !editingTubeId;
+  const editingId = editingTubeId; // isNew確定前に保持
   editingTubeId=null;
   refreshTubeSelect();
-  // 新規登録時は新IDをPC・ドロワー両方にセット
   if(isNew){
+    // 新規：新IDをPC・ドロワー両方にセット
     const newTube = db.tubes[db.tubes.length-1];
     const selTube = document.getElementById('sel-tube');
     if(selTube) selTube.value = newTube.id;
     const mobTube = document.getElementById('mob-sel-tube');
     if(mobTube) mobTube.value = newTube.id;
+    onTubeChange();
+  } else {
+    // 編集：現在の選択IDを維持してmob-sel-tubeも同期
+    const selTube = document.getElementById('sel-tube');
+    const curId = selTube ? selTube.value : '';
+    const mobTube = document.getElementById('mob-sel-tube');
+    if(mobTube && curId) mobTube.value = curId;
     onTubeChange();
   }
   // ドロワーの大会・筒場セレクトを同期
@@ -1430,6 +1458,7 @@ function saveTarget(){
     refreshTargetSelects();
     onTargetChange();
     layout();
+    updateMobBarLabels();
     return;
   }
   db.targets.push({id:uid(), name, lat:pendingTargetLat, lng:pendingTargetLng, height, elev:pendingTargetElev, shape, width, depth, frontAz});
