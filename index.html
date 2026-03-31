@@ -517,8 +517,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
               <canvas id="sim-canvas"></canvas>
             </div>
           </div>
-          <div id="view-info" style="position:absolute;bottom:6px;left:8px;font-size:8px;
-            line-height:1.6;pointer-events:none;text-align:left;"></div>
+          <div id="view-info" style="position:absolute;bottom:6px;left:8px;font-size:8px;line-height:1.6;pointer-events:none;text-align:left;white-space:nowrap;"></div>
         </div>
         <div id="diag-wrap">
           <div id="diag-clip" style="overflow:hidden;flex-shrink:0;flex-grow:0;position:relative;">
@@ -1069,10 +1068,7 @@ function updateViewLabel(){
       return `${t.name}: ${d<1?Math.round(d*1000)+'m':d.toFixed(2)+'km'}`;
     });
     const dTg = hav(viewLat, viewLng, tg.lat, tg.lng);
-    infoEl.innerHTML =
-      `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>　` +
-      distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ') +
-      `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'}</span>`;
+    infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>　` + distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ') + `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'} (${tg.height}m)</span>`;
   } else {
     infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>`;
   }
@@ -2286,7 +2282,7 @@ function renderSim(){
     const lblY = toY_cam(vaTop);
     ctx.fillStyle='rgba(126,184,232,0.9)';
     ctx.font='9px Space Mono,monospace'; ctx.textAlign='center';
-    if(tg) ctx.fillText('対象 '+(tgElev+tg.height).toFixed(0)+'m', lblX, lblY-6);
+    if(tg) ctx.fillText('対象 '+(tgElev+tg.height).toFixed(0)+'m ('+tg.height+'m)', lblX, lblY-6);
   } // drawTarget
 
   // 花火描画関数（全筒場）
