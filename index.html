@@ -517,7 +517,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
               <canvas id="sim-canvas"></canvas>
             </div>
           </div>
-          <div id="view-info" style="position:absolute;bottom:6px;left:8px;font-size:8px;line-height:1.6;pointer-events:none;text-align:left;white-space:nowrap;"></div>
+          <div id="view-info" style="position:absolute;bottom:6px;left:8px;line-height:1.6;pointer-events:none;text-align:left;white-space:nowrap;"></div>
         </div>
         <div id="diag-wrap">
           <div id="diag-clip" style="overflow:hidden;flex-shrink:0;flex-grow:0;position:relative;">
@@ -1065,16 +1065,21 @@ function updateViewLabel(){
   // sim-info下部にも詳細表示
   const infoEl = document.getElementById('view-info');
   if(!infoEl) return;
-  if(tubes.length>0 && tg){
+  // フォントサイズ：PC10px / スマホ8px
+  infoEl.style.fontSize = detectMobile() ? '8px' : '10px';
+  let infoHtml = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>`;
+  if(tubes.length>0){
     const distLines = tubes.map(t=>{
       const d = hav(viewLat,viewLng,t.lat,t.lng);
       return `${t.name}: ${d<1?Math.round(d*1000)+'m':d.toFixed(2)+'km'}`;
     });
-    const dTg = hav(viewLat, viewLng, tg.lat, tg.lng);
-    infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>　` + distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ') + `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'}</span>`;
-  } else {
-    infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>`;
+    infoHtml += `　` + distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ');
   }
+  if(tg){
+    const dTg = hav(viewLat, viewLng, tg.lat, tg.lng);
+    infoHtml += `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'}</span>`;
+  }
+  infoEl.innerHTML = infoHtml;
 }
 
 // ==================== 花火大会 ====================
@@ -1383,6 +1388,7 @@ function onTubeChange(){
   document.getElementById('btn-edit-tube').disabled = !tid;
   calcCamParams();
   refreshMapMarkers();
+  updateViewLabel();
   layout();
 }
 
@@ -1513,6 +1519,7 @@ function onTargetChange(){
   syncSimSelects();
   refreshMapMarkers();
   calcCamParams();
+  updateViewLabel();
 }
 function refreshTargetSelects(){
   const opts = db.targets.map(t=>`<option value="${t.id}">${escH(t.name)} (${t.height}m)</option>`).join('');
