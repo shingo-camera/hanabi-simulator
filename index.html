@@ -16,14 +16,14 @@
   --hdr:40px;--pnl:210px;--mob-bar:0px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mono',monospace;font-size:11px;overflow:hidden;touch-action:pan-x pan-y;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mono',monospace;font-size:13px;overflow:hidden;touch-action:pan-x pan-y;}
 
 /* ヘッダー */
 #hdr{height:var(--hdr);display:flex;align-items:center;gap:10px;padding:0 14px;
   border-bottom:1px solid var(--bd);background:var(--bg);position:relative;z-index:100;}
-#hdr h1{font-size:12px;color:var(--ac);letter-spacing:.1em;flex:1;}
+#hdr h1{font-size:14px;color:var(--ac);letter-spacing:.1em;flex:1;}
 #hdr .hbtn{background:none;border:1px solid var(--bd);color:var(--sub);border-radius:4px;
-  padding:3px 8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;}
+  padding:3px 8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:13px;}
 #hdr .hbtn:hover{border-color:var(--ac);color:var(--ac);}
 
 /* メインレイアウト */
@@ -35,38 +35,38 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
 #pnl::-webkit-scrollbar{width:3px;}
 #pnl::-webkit-scrollbar-thumb{background:var(--bd);}
 
-.sec{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--ac);
+.sec{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ac);
   text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;margin-top:8px;}
 .sec:first-child{margin-top:0;}
 .sec::after{content:'';flex:1;height:1px;background:var(--bd);}
 
 .ig{display:flex;flex-direction:column;gap:3px;margin-bottom:5px;}
-.ig label{font-size:8.5px;color:var(--sub);}
+.ig label{font-size:14px;color:var(--sub);}
 .ig select,.ig input[type=text],.ig input[type=number]{
   background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
-  padding:4px 6px;color:var(--tx);font-family:'Space Mono',monospace;font-size:10px;width:100%;}
+  padding:4px 6px;color:var(--tx);font-family:'Space Mono',monospace;font-size:14px;width:100%;}
 .ig select:focus,.ig input:focus{border-color:var(--ac);outline:none;}
 .ig select option{background:var(--sur2);}
 
 .pb{background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
   color:var(--tx);padding:4px 7px;cursor:pointer;font-family:'Space Mono',monospace;
-  font-size:11px;width:100%;text-align:center;}
+  font-size:13px;width:100%;text-align:center;}
 .pb:hover{border-color:var(--ac);color:var(--ac);}
 .pb.pri{background:rgba(232,135,74,.15);border-color:var(--ac);color:var(--ac);}
 .pb.pri:hover{background:rgba(232,135,74,.25);}
 .pb.danger{border-color:#e05;color:#e05;}
 .pb.danger:hover{background:rgba(238,0,85,.1);}
-.pb.sm{padding:3px 6px;font-size:8.5px;}
+.pb.sm{padding:3px 6px;font-size:14px;}
 
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
 
 /* 筒場リスト */
 .tube-item{background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
   padding:4px 6px;margin-bottom:3px;display:flex;align-items:center;gap:4px;}
-.tube-item .ti-name{flex:1;font-size:9.5px;color:var(--tx);min-width:0;
+.tube-item .ti-name{flex:1;font-size:11.5px;color:var(--tx);min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tube-item .ti-nums{font-size:8px;color:var(--sub);}
-.tube-item .ti-del{color:var(--sub);cursor:pointer;font-size:11px;flex-shrink:0;padding:0 2px;}
+.tube-item .ti-nums{font-size:14px;color:var(--sub);}
+.tube-item .ti-del{color:var(--sub);cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px;}
 .tube-item .ti-del:hover{color:#e05;}
 
 /* 号数チェックボックスグリッド */
@@ -75,7 +75,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
   background:var(--sur2);border:1px solid var(--bd);border-radius:3px;padding:3px 2px;}
 .num-cb:hover{border-color:var(--sub);}
 .num-cb.checked{border-color:var(--ac);background:rgba(232,135,74,.12);}
-.num-cb span{font-size:8px;color:var(--sub);pointer-events:none;}
+.num-cb span{font-size:14px;color:var(--sub);pointer-events:none;}
 .num-cb.checked span{color:var(--ac);}
 .num-cb input{display:none;}
 
@@ -91,7 +91,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
   display:flex;gap:4px;}
 .mm-btn{background:rgba(10,12,20,.85);border:1px solid var(--bd);color:var(--sub);
   border-radius:12px;padding:3px 10px;cursor:pointer;font-family:'Space Mono',monospace;
-  font-size:9px;backdrop-filter:blur(4px);}
+  font-size:13px;backdrop-filter:blur(4px);}
 .mm-btn.active{border-color:var(--ac);color:var(--ac);}
 .mm-btn.active.target{border-color:var(--ac2);color:var(--ac2);}
 
@@ -102,7 +102,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
 /* タブバー */
 #sim-tabs{display:flex;align-items:center;gap:0;flex-shrink:0;
   border-bottom:1px solid var(--bd);background:var(--sur);}
-.sim-tab{padding:5px 16px;font-family:'Space Mono',monospace;font-size:9px;
+.sim-tab{padding:5px 16px;font-family:'Space Mono',monospace;font-size:13px;
   color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;
   transition:color .15s,border-color .15s;}
 .sim-tab.active{color:var(--ac);border-bottom-color:var(--ac);}
@@ -115,8 +115,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Mo
 /* スライダーパネル（左パネル内） */
 #sliders{display:flex;flex-direction:column;gap:6px;}
 .sl-row{display:flex;flex-direction:column;gap:2px;}
-.sl-row label{font-size:8px;color:var(--sub);display:flex;justify-content:space-between;}
-.sl-row label span{color:var(--ac);font-size:8px;}
+.sl-row label{font-size:14px;color:var(--sub);display:flex;justify-content:space-between;}
+.sl-row label span{color:var(--ac);font-size:14px;}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;
   background:var(--bd);border-radius:2px;outline:none;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;
@@ -138,7 +138,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .orient-row{display:flex;gap:3px;}
 .orient-row .ob{background:var(--sur2);border:1px solid var(--bd);color:var(--sub);
   border-radius:3px;padding:2px 7px;cursor:pointer;font-family:'Space Mono',monospace;
-  font-size:8px;}
+  font-size:14px;}
 .orient-row .ob.on{border-color:var(--ac);color:var(--ac);}
 
 
@@ -149,33 +149,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .modal-overlay.open{display:flex;}
 .modal{background:var(--sur);border:1px solid var(--bd);border-radius:8px;
   padding:16px;min-width:300px;max-width:90vw;max-height:85vh;overflow-y:auto;}
-.modal h2{font-size:11px;color:var(--ac);letter-spacing:.08em;margin-bottom:12px;}
+.modal h2{font-size:13px;color:var(--ac);letter-spacing:.08em;margin-bottom:12px;}
 .modal .mig{display:flex;flex-direction:column;gap:3px;margin-bottom:10px;}
-.modal .mig label{font-size:8.5px;color:var(--sub);}
+.modal .mig label{font-size:14px;color:var(--sub);}
 .modal .mig input,.modal .mig select{
   background:var(--sur2);border:1px solid var(--bd);border-radius:4px;
-  padding:5px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:10px;width:100%;}
+  padding:5px 8px;color:var(--tx);font-family:'Space Mono',monospace;font-size:14px;width:100%;}
 .modal .mig input:focus,.modal .mig select:focus{border-color:var(--ac);outline:none;}
 .modal-btns{display:flex;gap:6px;margin-top:12px;}
 .modal-btns .pb{flex:1;}
 
 /* 設定モーダル：号数テーブル */
-.num-table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px;}
+.num-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;}
 .num-table th{color:var(--sub);padding:4px 6px;border-bottom:1px solid var(--bd);text-align:left;}
 .num-table td{padding:3px 4px;border-bottom:1px solid rgba(37,42,64,.5);}
 .num-table input{background:var(--sur2);border:1px solid var(--bd);border-radius:3px;
-  padding:2px 4px;color:var(--tx);font-family:'Space Mono',monospace;font-size:9px;width:70px;}
+  padding:2px 4px;color:var(--tx);font-family:'Space Mono',monospace;font-size:13px;width:70px;}
 .num-table input:focus{border-color:var(--ac);outline:none;}
 
 /* 地図ポップアップ */
 .map-popup{background:var(--sur);border:1px solid var(--bd);border-radius:6px;
   padding:10px;min-width:180px;}
-.map-popup h3{font-size:10px;color:var(--ac);margin-bottom:8px;}
+.map-popup h3{font-size:14px;color:var(--ac);margin-bottom:8px;}
 .map-popup .mig{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;}
-.map-popup .mig label{font-size:8px;color:var(--sub);}
+.map-popup .mig label{font-size:14px;color:var(--sub);}
 .map-popup .mig input,.map-popup .mig select{
   background:var(--bg);border:1px solid var(--bd);border-radius:3px;
-  padding:3px 5px;color:var(--tx);font-family:'Space Mono',monospace;font-size:9px;width:100%;}
+  padding:3px 5px;color:var(--tx);font-family:'Space Mono',monospace;font-size:13px;width:100%;}
 .map-popup .mig input:focus,.map-popup .mig select:focus{border-color:var(--ac);outline:none;}
 .leaflet-popup-content-wrapper{background:transparent!important;border:none!important;
   box-shadow:none!important;padding:0!important;}
@@ -1068,7 +1068,7 @@ function updateViewLabel(){
       return `${t.name}: ${d<1?Math.round(d*1000)+'m':d.toFixed(2)+'km'}`;
     });
     const dTg = hav(viewLat, viewLng, tg.lat, tg.lng);
-    infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>　` + distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ') + `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'} (${tg.height}m)</span>`;
+    infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>　` + distLines.map(s=>`<span style="color:var(--sub)">${s}</span>`).join(' / ') + `　<span style="color:var(--ac2)">対象 ${dTg<1?Math.round(dTg*1000)+'m':dTg.toFixed(2)+'km'}</span>`;
   } else {
     infoEl.innerHTML = `<span style="color:var(--ac)">視点標高 ${viewElev.toFixed(1)}m</span>`;
   }
