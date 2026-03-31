@@ -740,11 +740,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <label>地面標高</label>
       <div id="target-elev-disp" style="font-size:10px;color:var(--ac2);padding:3px 0;">取得中…</div>
     </div>
-    <div class="mig">
-      <label>建物高さ [m] <span style="color:var(--ac);">※必須</span></label>
+    <div class="mig" id="target-height-row">
+      <label>建物高さ [m] <span id="target-height-required" style="color:var(--ac);">※必須</span></label>
       <input type="number" id="inp-target-height" placeholder="例：103" min="1" max="2000">
     </div>
-    <div class="mig">
+    <div class="mig" id="target-width-row">
       <label>幅 [m]　※任意　プレビューの横の重なりに反映</label>
       <input type="number" id="inp-target-width" placeholder="デフォルト: 10" min="1" max="5000">
     </div>
@@ -754,6 +754,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <option value="cylinder">円柱</option>
         <option value="box">四角柱</option>
         <option value="cone">円錐</option>
+        <option value="person">人物（女性）</option>
       </select>
     </div>
     <div class="mig" id="target-frontaz-row">
@@ -1381,8 +1382,24 @@ async function openAddTargetModal(lat,lng){
 }
 function onTargetShapeChange(){
   const shape = document.getElementById('inp-target-shape').value;
-  const row = document.getElementById('target-frontaz-row');
-  if(row) row.style.display = (shape==='cylinder'||shape==='cone') ? 'none' : '';
+  const isPerson = shape === 'person';
+  const isRound  = shape === 'cylinder' || shape === 'cone' || isPerson;
+  // 向き非表示（円柱・円錐・人物）
+  const azRow = document.getElementById('target-frontaz-row');
+  if(azRow) azRow.style.display = isRound ? 'none' : '';
+  // 人物時：高さ・幅をグレーアウト・固定値セット
+  const hInp = document.getElementById('inp-target-height');
+  const wInp = document.getElementById('inp-target-width');
+  const hReq = document.getElementById('target-height-required');
+  if(isPerson){
+    if(hInp){ hInp.value=1.6; hInp.disabled=true; hInp.style.opacity='0.5'; }
+    if(wInp){ wInp.value=0.4; wInp.disabled=true; wInp.style.opacity='0.5'; }
+    if(hReq) hReq.style.display='none';
+  } else {
+    if(hInp){ hInp.disabled=false; hInp.style.opacity=''; }
+    if(wInp){ wInp.disabled=false; wInp.style.opacity=''; }
+    if(hReq) hReq.style.display='';
+  }
 }
 
 function cancelAddTarget(){
@@ -1393,14 +1410,16 @@ function cancelAddTarget(){
 }
 function saveTarget(){
   const name    = document.getElementById('inp-target-name').value.trim();
-  const height  = parseFloat(document.getElementById('inp-target-height').value);
-  const width   = parseFloat(document.getElementById('inp-target-width').value)||10;
-  const depth   = width; // 奥行=幅で統一
   const shape   = document.getElementById('inp-target-shape').value||'cylinder';
-  // 円柱・円錐は向き不問なので北固定
-  const frontAz = (shape==='cylinder'||shape==='cone') ? 0 : (parseInt(document.getElementById('inp-target-frontaz').value)||0);
+  // 人物時は高さ・幅固定
+  const isPerson = shape === 'person';
+  const height  = isPerson ? 1.6 : parseFloat(document.getElementById('inp-target-height').value);
+  const width   = isPerson ? 0.4 : (parseFloat(document.getElementById('inp-target-width').value)||10);
+  const depth   = width;
+  // 円柱・円錐・人物は向き不問なので北固定
+  const frontAz = (shape==='cylinder'||shape==='cone'||isPerson) ? 0 : (parseInt(document.getElementById('inp-target-frontaz').value)||0);
   if(!name){alert('名前を入力してください');return;}
-  if(!height||height<=0){alert('高さを入力してください');return;}
+  if(!isPerson && (!height||height<=0)){alert('高さを入力してください');return;}
   if(editingTargetId){
     // 編集モード：全フィールド更新（座標・標高は変更しない）
     const tg = db.targets.find(x=>x.id===editingTargetId);
@@ -2146,7 +2165,92 @@ function renderSim(){
       }
     }
 
-    flushFaces();
+    // 人物シルエット（shape==='person'の場合は3D投影の代わりに直接描画）
+    if(shape === 'person'){
+      // 画面上の足元・頭頂Y座標
+      const pyTop  = toY_cam(vaTop);   // 頭頂
+      const pyBase = toY_cam(vaBase);  // 足元
+      const pH = pyBase - pyTop;       // 全高px
+      if(pH > 4){
+        // 中心X：対象のX座標
+        const [pxC] = gp(0, 0, 0);
+        const pW = pH * 0.4 / 1.6;    // 幅px（幅0.4m / 高さ1.6m）
+        const u = pH / 7;              // 1頭身px
+
+        // --- 塗りつぶし（水色） ---
+        ctx.fillStyle = 'rgba(126,184,232,0.85)';
+        ctx.strokeStyle = '#d4a017';
+        ctx.lineWidth = Math.max(1, pH * 0.015);
+
+        const draw = (fn) => { ctx.beginPath(); fn(); ctx.fill(); ctx.stroke(); };
+
+        // 頭（円）
+        draw(()=>{ ctx.arc(pxC, pyTop + u*0.5, u*0.46, 0, Math.PI*2); });
+
+        // 首
+        draw(()=>{
+          ctx.rect(pxC - u*0.14, pyTop+u*0.94, u*0.28, u*0.3);
+        });
+
+        // 胴体（肩〜ウエスト〜腰）
+        draw(()=>{
+          const sx = pW*0.5*0.72; // 肩半幅
+          const wx = pW*0.5*0.48; // ウエスト半幅
+          const hx = pW*0.5*0.64; // 腰半幅
+          const y0 = pyTop+u*1.24; // 肩
+          const y1 = pyTop+u*2.5;  // ウエスト
+          const y2 = pyTop+u*3.1;  // 腰
+          ctx.moveTo(pxC-sx, y0);
+          ctx.bezierCurveTo(pxC-sx-u*0.1, y0+u*0.3, pxC-wx-u*0.05, y1-u*0.2, pxC-wx, y1);
+          ctx.bezierCurveTo(pxC-wx, y1+u*0.1, pxC-hx, y2-u*0.1, pxC-hx, y2);
+          ctx.lineTo(pxC+hx, y2);
+          ctx.bezierCurveTo(pxC+hx, y2-u*0.1, pxC+wx, y1+u*0.1, pxC+wx, y1);
+          ctx.bezierCurveTo(pxC+wx+u*0.05, y1-u*0.2, pxC+sx+u*0.1, y0+u*0.3, pxC+sx, y0);
+          ctx.closePath();
+        });
+
+        // 腕（左）
+        draw(()=>{
+          const y0 = pyTop+u*1.3;
+          ctx.moveTo(pxC-pW*0.36, y0);
+          ctx.bezierCurveTo(pxC-pW*0.5, y0+u*0.6, pxC-pW*0.58, y0+u*1.4, pxC-pW*0.56, y0+u*1.9);
+          ctx.bezierCurveTo(pxC-pW*0.54, y0+u*2.1, pxC-pW*0.44, y0+u*2.1, pxC-pW*0.4, y0+u*1.9);
+          ctx.bezierCurveTo(pxC-pW*0.38, y0+u*1.4, pxC-pW*0.32, y0+u*0.6, pxC-pW*0.22, y0);
+          ctx.closePath();
+        });
+        // 腕（右）
+        draw(()=>{
+          const y0 = pyTop+u*1.3;
+          ctx.moveTo(pxC+pW*0.36, y0);
+          ctx.bezierCurveTo(pxC+pW*0.5, y0+u*0.6, pxC+pW*0.58, y0+u*1.4, pxC+pW*0.56, y0+u*1.9);
+          ctx.bezierCurveTo(pxC+pW*0.54, y0+u*2.1, pxC+pW*0.44, y0+u*2.1, pxC+pW*0.4, y0+u*1.9);
+          ctx.bezierCurveTo(pxC+pW*0.38, y0+u*1.4, pxC+pW*0.32, y0+u*0.6, pxC+pW*0.22, y0);
+          ctx.closePath();
+        });
+
+        // スカート（Aライン）
+        draw(()=>{
+          const sy = pyTop+u*3.1;  // スカート開始（腰）
+          const sw = pW*0.64;      // 腰半幅
+          const ew = pH*0.38;      // 裾半幅
+          ctx.moveTo(pxC-sw, sy);
+          ctx.bezierCurveTo(pxC-sw-u*0.2, sy+u*1.2, pxC-ew, pyBase-u*0.3, pxC-ew, pyBase);
+          ctx.lineTo(pxC+ew, pyBase);
+          ctx.bezierCurveTo(pxC+ew, pyBase-u*0.3, pxC+sw+u*0.2, sy+u*1.2, pxC+sw, sy);
+          ctx.closePath();
+        });
+
+        // 足先（楕円）
+        draw(()=>{
+          ctx.ellipse(pxC-pW*0.18, pyBase, pW*0.22, Math.max(2, u*0.12), 0, 0, Math.PI*2);
+        });
+        draw(()=>{
+          ctx.ellipse(pxC+pW*0.18, pyBase, pW*0.22, Math.max(2, u*0.12), 0, 0, Math.PI*2);
+        });
+      }
+    } else {
+      flushFaces();
+    }
 
     // ラベル
     const [lblX]=gp(0, tgH, 0);
@@ -2383,10 +2487,39 @@ function renderDiag(){
   const tgCYtop  = toCanvasY(tgTopY);
   const tgCW = Math.max(4, PW*0.04);
   if(tg){
-    ctx.fillStyle='rgba(126,184,232,0.2)';
-    ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.2;
-    ctx.fillRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
-    ctx.strokeRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+    if(tg.shape === 'person'){
+      // 人物シルエット（横から：シンプルな横シルエット）
+      const pH = tgCYbase - tgCYtop;
+      const pW = Math.max(3, pH * 0.4 / 1.6);
+      const u  = pH / 7;
+      const cx = tgCX;
+      ctx.fillStyle = 'rgba(126,184,232,0.85)';
+      ctx.strokeStyle = '#d4a017';
+      ctx.lineWidth = Math.max(0.8, pH * 0.012);
+      const draw = (fn) => { ctx.beginPath(); fn(); ctx.fill(); ctx.stroke(); };
+      // 頭
+      draw(()=>{ ctx.arc(cx, tgCYtop+u*0.5, u*0.44, 0, Math.PI*2); });
+      // 首
+      draw(()=>{ ctx.rect(cx-u*0.12, tgCYtop+u*0.92, u*0.24, u*0.28); });
+      // 胴
+      draw(()=>{
+        ctx.ellipse(cx, tgCYtop+u*2.0, pW*0.52, u*0.88, 0, 0, Math.PI*2);
+      });
+      // スカート（横から：後ろに少し広がる台形）
+      draw(()=>{
+        const sy = tgCYtop+u*3.0;
+        ctx.moveTo(cx-pW*0.5, sy);
+        ctx.bezierCurveTo(cx-pW*0.6, sy+u*1.0, cx-pW*0.72, tgCYbase-u*0.2, cx-pW*0.68, tgCYbase);
+        ctx.lineTo(cx+pW*0.5, tgCYbase);
+        ctx.bezierCurveTo(cx+pW*0.46, tgCYbase-u*0.2, cx+pW*0.38, sy+u*1.0, cx+pW*0.4, sy);
+        ctx.closePath();
+      });
+    } else {
+      ctx.fillStyle='rgba(126,184,232,0.2)';
+      ctx.strokeStyle='rgba(126,184,232,0.7)'; ctx.lineWidth=1.2;
+      ctx.fillRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+      ctx.strokeRect(tgCX-tgCW/2, tgCYtop, tgCW, tgCYbase-tgCYtop);
+    }
   }
 
   // ── 筒場＋花火 ──
