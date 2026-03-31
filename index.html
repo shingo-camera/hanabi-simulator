@@ -985,6 +985,9 @@ async function onViewPick(){
   if(pinBtn){ pinBtn.disabled=false; pinBtn.style.opacity='1'; }
   if(viewLat===null||viewLng===null) return;
 
+  // 地図を視点座標に移動（ピン呼び出し時など地図が追従していない場合）
+  if(map) map.setView([viewLat, viewLng], map.getZoom());
+
   // 既存マーカー削除
   if(viewMarker){ map.removeLayer(viewMarker); viewMarker=null; }
 
@@ -1380,6 +1383,7 @@ function onTubeChange(){
   document.getElementById('btn-edit-tube').disabled = !tid;
   calcCamParams();
   refreshMapMarkers();
+  layout();
 }
 
 // ==================== 対象物 ====================
